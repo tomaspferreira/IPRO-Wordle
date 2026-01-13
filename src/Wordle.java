@@ -24,6 +24,12 @@ public class Wordle {
         int tries = 0;
         int chances = words_count + 5;
         String guess = "";
+        for (int i = 0; i < words_count; i++){
+            IO.print(" |   ");
+            IO.print("Word: " + (i + 1));
+            IO.print("  | ");
+        }
+        IO.println("");
         while (tries < chances) {
             boolean allSolved = true;
             for (int i = 0; i < solved.length; i++) {
@@ -46,17 +52,17 @@ public class Wordle {
             for (int w = 0; w < words_count; w++) {
 
                 if (solved[w]) {
-                    IO.println("Word " + (w + 1) + ": SOLVED!");
+                    IO.print("Word " + (w + 1) + ": SOLVED! ");
                     continue;
                 }
 
                 if (guess.equals(words[w])) {
                     solved[w] = true;
-                    IO.println("Word " + (w + 1) + ": CORRECT!");
+                    IO.print("Word " + (w + 1) + ": CORRECT!");
                     continue;
                 }
 
-                IO.print("Word " + (w + 1) + ": ");
+                IO.print(" | ");
                 for (int i = 0; i < letters; i++) {
                     char c = guess.charAt(i);
 
@@ -68,10 +74,10 @@ public class Wordle {
                         IO.print(ConsoleColors.BLACK_BACKGROUND + c + ConsoleColors.RESET + " ");
                     }
                 }
-                IO.println("");
+                IO.print(" | ");
             }
 
-            IO.println("Remaining guesses: " + (chances - tries));
+            IO.println(" Remaining guesses: " + (chances - tries));
         }
         boolean allSolved = true;
         for (int i = 0; i < solved.length; i++) {
