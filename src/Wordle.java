@@ -51,6 +51,7 @@ public class Wordle {
 
             for (int w = 0; w < words_count; w++) {
 
+
                 if (solved[w]) {
                     IO.print("Word " + (w + 1) + ": SOLVED! ");
                     continue;
@@ -62,16 +63,41 @@ public class Wordle {
                     continue;
                 }
 
+                String word = words[w];
+
+                char[] letter_in_word = word.toCharArray();
+                boolean[] green = new boolean[letters];
+
+                for (int i = 0; i < letters; i++) {
+                    char c = guess.charAt(i);
+                    if (c == word.charAt(i)) {
+                        green[i] = true;
+                        letter_in_word[i] = 0;
+                    }
+                }
+
                 IO.print(" | ");
+
                 for (int i = 0; i < letters; i++) {
                     char c = guess.charAt(i);
 
-                    if (c == words[w].charAt(i)) {
+                    if (green[i]) {
                         IO.print(ConsoleColors.GREEN_BACKGROUND + c + ConsoleColors.RESET + " ");
-                    } else if (words[w].indexOf(c) != -1) {
-                        IO.print(ConsoleColors.YELLOW_BACKGROUND + c + ConsoleColors.RESET + " ");
                     } else {
-                        IO.print(ConsoleColors.BLACK_BACKGROUND + c + ConsoleColors.RESET + " ");
+                        boolean found = false;
+                        for (int j = 0; j < letters; j++) {
+                            if (letter_in_word[j] == c) {
+                                letter_in_word[j] = 0;
+                                found = true;
+                                break;
+                            }
+                        }
+
+                        if (found) {
+                            IO.print(ConsoleColors.YELLOW_BACKGROUND + c + ConsoleColors.RESET + " ");
+                        } else {
+                            IO.print(ConsoleColors.BLACK_BACKGROUND + c + ConsoleColors.RESET + " ");
+                        }
                     }
                 }
                 IO.print(" | ");
