@@ -37,5 +37,8 @@ The game modes used on my programm and researched about them were based on alrea
 ### Opensource AI
 For guiding methods and correction purposes, Chatgpt was used.
 
+### Peer interaction
+Through exchange of ideas and knowledge, more diverse aspects and functions could be applied on this project
+
 ## License
 This project uses the MIT license
