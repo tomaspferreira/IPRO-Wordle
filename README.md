@@ -1,44 +1,3 @@
-# Wordle
-
-
-
-
-## Add your files
-
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
-
-```
-cd existing_repo
-git remote add origin https://gitlab.fhnw.ch/tomas.pereiraferreira/ipro-wordle.git
-git branch -M main
-git push -uf origin main
-```
-
-## Integrate with your tools
-
-- [ ] [Set up project integrations](https://gitlab.fhnw.ch/tomas.pereiraferreira/ipro-wordle/-/settings/integrations)
-
-## Collaborate with your team
-
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
-
-## Test and Deploy
-
-Use the built-in continuous integration in GitLab.
-
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
-
-***
-
 # Self-made Wordle
 
 ## Description
@@ -65,7 +24,18 @@ tomas.ferreira@students.fhnw.ch
 If you have ideas for releases in the future, it is a good idea to list them in the README.
 
 ## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+### Game modes: 
+The game modes used on my programm and researched about them were based on already existing online games from either New York Times or stand-alone websites. All the links to the original games are listed below:
+- Wordle: https://www.nytimes.com/games/wordle/index.html
+- Verticle: https://verticle.netlify.app/
+- Xordle: https://xordle.org/
+- Nerdle: https://nerdlegame.com/
+
+### Stack Overflow
+- The class used to create the background colors seen on the terminal during gameplay was found in a discussion created on Apr 23, 2011 by Taranath Datta: https://stackoverflow.com/questions/5762491/how-to-print-color-in-console-using-system-out-println/5762502#5762502
+
+### Opensource AI
+For guiding methods and correction purposes, Chatgpt was used.
 
 ## License
 This project uses the MIT license
