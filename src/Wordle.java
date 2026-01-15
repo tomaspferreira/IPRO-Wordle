@@ -15,9 +15,15 @@ public class Wordle {
         }
         String[] words = new String[words_count];
         boolean[] solved = new boolean[words_count];
+        boolean[] used = new boolean[list.length];
 
         for (int i = 0; i < words_count; i++) {
-            int random = (int) (Math.random() * list.length);
+            int random;
+            do {
+                random = (int) (Math.random() * list.length);
+            } while (used[random]);
+
+            used[random] = true;
             words[i] = list[random];
             solved[i] = false;
         }
