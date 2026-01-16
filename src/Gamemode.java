@@ -17,8 +17,14 @@ public class Gamemode {
             }
             Wordle wordle = new Wordle(words_input, letter_input, lang);
         } else if (this.game.equals("xordle")) {
+            int letter_input = Integer.parseInt(IO.readln("How many letters should the mystery words have? "));
+            while (letter_input < 4 || letter_input > 5) {
+                letter_input = Integer.parseInt(IO.readln("It is only possible for the word to have 4 or 5 letters. "));
+            }
+            Xordle xordle = new Xordle(letter_input, lang);
 
         } else if (this.game.equals("verticle")) {
+
 
         } else if (this.game.equals("mathler")) {
             int length = Integer.parseInt(IO.readln("How long would you like the equation to be? (8 - 11) "));
