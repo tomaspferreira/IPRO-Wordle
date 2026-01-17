@@ -27,9 +27,9 @@ public class Gamemode {
 
 
         } else if (this.game.equals("mathler")) {
-            int length = Integer.parseInt(IO.readln("How long would you like the equation to be? (8 - 11) "));
+            int length = Integer.parseInt(IO.readln("How many numbers would you like the equation to have? (2 - 4) "));
             while (length < 8 || length > 11) {
-                length = Integer.parseInt(IO.readln("Please choose between 8 and 11: "));
+                length = Integer.parseInt(IO.readln("Please choose between 2 and 4: "));
             }
             Mathler mathler = new Mathler(length);
         }
