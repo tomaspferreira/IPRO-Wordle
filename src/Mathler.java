@@ -110,7 +110,9 @@ public class Mathler {
                     result -= numbers2[i + 1];
                 }
             }
-            IO.println(equation);
+            if (result > 0) {
+                IO.println(equation);
+            }
         } while (result < 0); // Repeat if result is negative
         IO.println(result);
     }
