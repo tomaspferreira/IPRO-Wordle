@@ -5,11 +5,12 @@ public class Mathler {
         this.length = length;
 
         int result = 0;
+        String equation = "";
         int[] numbers = new int[length];
         char[] eq_ops = new char[length - 1];
         char[] operators = {'+', '-', '*', '/'};
         do {
-            String equation = "";
+            equation = "";
             numbers[0] = 1 + (int)(Math.random() * 99);
 
             // "running" keeps track of the current * / segment value
@@ -110,10 +111,90 @@ public class Mathler {
                     result -= numbers2[i + 1];
                 }
             }
-            if (result > 0) {
-                IO.println(equation);
-            }
         } while (result < 0); // Repeat if result is negative
+        IO.println(equation);
         IO.println(result);
+
+        boolean solved = false;
+
+        int tries = 0;
+        int chances = equation.length() + 2;
+        String guess = "";
+
+        IO.println("The result you are trying to get is " + result + " and your equation has " + equation.length() + " characters: ");
+
+        for (int i = 0; i < equation.length(); i++) {
+            IO.print(ConsoleColors.WHITE_BACKGROUND + " " + ConsoleColors.RESET);
+            IO.print(" ");
+        }
+        IO.println("");
+
+        while (tries < chances) {
+            guess = IO.readln("Guess the equation: ").trim();
+
+            if (guess.length() != equation.length()) {
+                IO.println("Your guess must be " + equation.length() + " characters long.");
+                continue;
+            }
+
+            tries++;
+
+            if (guess.equals(equation)) {
+                solved = true;
+                IO.println("CORRECT!");
+                break;
+            }
+
+            // Remaining letters that can still be matched as yellow
+            char[] char_in_word = equation.toCharArray();
+
+            // Tracks which positions are green
+            boolean[] green = new boolean[equation.length()];
+
+            // First pass: mark GREEN letters
+            for (int i = 0; i < equation.length(); i++) {
+                char c = guess.charAt(i);
+                if (c == equation.charAt(i)) {
+                    green[i] = true;
+                    char_in_word[i] = 0; // consume this letter
+                }
+            }
+
+            // Second pass: print colors for each letter
+            for (int i = 0; i < equation.length(); i++) {
+                char c = guess.charAt(i);
+
+                if (green[i]) {
+                    // Correct letter in correct position
+                    IO.print(ConsoleColors.GREEN_BACKGROUND + c + ConsoleColors.RESET + " ");
+                } else {
+                    boolean found = false;
+
+                    // Check if the letter exists elsewhere in the word
+                    for (int j = 0; j < equation.length(); j++) {
+                        if (char_in_word[j] == c) {
+                            char_in_word[j] = 0; // consume one occurrence
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    if (found) {
+                        IO.print(ConsoleColors.YELLOW_BACKGROUND + c + ConsoleColors.RESET + " ");
+                    } else {
+                        IO.print(ConsoleColors.BLACK_BACKGROUND + c + ConsoleColors.RESET + " ");
+                    }
+                }
+            }
+            IO.println(" Remaining guesses: " + (chances - tries));
+        }
+
+        if (solved) {
+            IO.println("Congratulations! You solved the equation!");
+        } else {
+            IO.println("You lost. The equation was:");
+            IO.println(equation);
+        }
+
     }
 }
