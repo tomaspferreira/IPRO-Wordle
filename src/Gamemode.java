@@ -24,7 +24,11 @@ public class Gamemode {
             Xordle xordle = new Xordle(letter_input, lang);
 
         } else if (this.game.equals("verticle")) {
-
+            int letter_input = Integer.parseInt(IO.readln("How many letters should the mystery words have? "));
+            while (letter_input < 4 || letter_input > 5) {
+                letter_input = Integer.parseInt(IO.readln("It is only possible for the word to have 4 or 5 letters. "));
+            }
+            Verticle verticle = new Verticle(letter_input, lang);
 
         } else if (this.game.equals("mathler")) {
             int length = Integer.parseInt(IO.readln("How many numbers would you like the equation to have? (2 - 4) "));
