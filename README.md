@@ -35,6 +35,9 @@ The game modes used on my programm and researched about them were based on alrea
 - The class used to create the background colors seen on the terminal during gameplay was found in this discussion: https://stackoverflow.com/questions/5762491/how-to-print-color-in-console-using-system-out-println/5762502#5762502
 - Many occasions in my code use Math.random. To better understand how to use it, the following discussion was read: https://stackoverflow.com/questions/363681/how-do-i-generate-random-integers-within-a-specific-range-in-java
 
+### W3Schools
+- Learned about multidimensional arrays in this platform: https://www.w3schools.com/java/java_arrays_multi.asp
+
 ### Opensource AI
 For guiding methods and correction purposes, Chatgpt was used.
 
