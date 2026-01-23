@@ -1,12 +1,11 @@
 public class Xordle {
 
-    int letters;
+    private int letters;
+    private Language lang;
 
-    Language lang;
-
-    Xordle(int letters, Language lang) {
-        this.letters = letters;
-        this.lang = lang;
+    Xordle(int letterCount, Language language) {
+        this.letters = letterCount;
+        this.lang = language;
 
         String[] list = lang.getWordList(letters);
 
@@ -15,9 +14,7 @@ public class Xordle {
         }
 
         String[] words = new String[2];
-
         boolean[] solved = new boolean[2];
-
         boolean[] used = new boolean[list.length];
 
         for (int i = 0; i < 2; i++) {
@@ -45,7 +42,9 @@ public class Xordle {
                     break;
                 }
             }
-            if (allSolved) break;
+            if (allSolved) {
+                break;
+            }
 
             String guess = IO.readln("Guess the word: ").trim().toUpperCase();
 
@@ -88,35 +87,25 @@ public class Xordle {
         }
     }
 
-    /**
-     * Wordle-style scoring for ONE word. Returns an array where:
-     * 0 = grey
-     * 1 = yellow
-     * 2 = green
-     */
     static int[] scoreWordle(String word, String guess) {
+        int n = word.length();
 
-        // Result color for each position
-        int[] status = new int[word.length()];
-
-        // Remaining letters that can still be matched as yellow
+        int[] status = new int[n];
         char[] remaining = word.toCharArray();
+        boolean[] green = new boolean[n];
 
-        // Tracks which positions are green
-        boolean[] green = new boolean[word.length()];
-
-        // Find GREEN letters
-        for (int i = 0; i < word.length(); i++) {
+        // Greens
+        for (int i = 0; i < n; i++) {
             char c = guess.charAt(i);
             if (c == word.charAt(i)) {
-                status[i] = 2;      // green
+                status[i] = 2;
                 green[i] = true;
-                remaining[i] = 0;  // consume this letter
+                remaining[i] = 0;
             }
         }
 
-        // Find YELLOW letters
-        for (int i = 0; i < word.length(); i++) {
+        // Yellows
+        for (int i = 0; i < n; i++) {
             if (green[i]) {
                 continue;
             }
@@ -124,46 +113,34 @@ public class Xordle {
             char c = guess.charAt(i);
             boolean found = false;
 
-            // Search remaining letters
-            for (int j = 0; j < word.length(); j++) {
+            for (int j = 0; j < n; j++) {
                 if (remaining[j] == c) {
-                    remaining[j] = 0; // consume
+                    remaining[j] = 0;
                     found = true;
                     break;
                 }
             }
 
             if (found) {
-                status[i] = 1; // yellow
+                status[i] = 1;
             }
         }
 
         return status;
     }
 
-    /**
-     * Prints the Xordle hint for a guess.
-     *
-     * Color rules:
-     * - BLUE   → both words have GREEN at this position
-     * - GREEN  → exactly one word has GREEN
-     * - YELLOW → at least one word has YELLOW (and no green rule above)
-     * - BLACK  → otherwise
-     */
     static void printXorHintSimple(String guess, String w1, String w2) {
-
-        // Score the guess against both words
         int[] s1 = scoreWordle(w1, guess);
         int[] s2 = scoreWordle(w2, guess);
 
         IO.print(" | ");
 
-        // Decide color for each letter position
         for (int i = 0; i < guess.length(); i++) {
             char c = guess.charAt(i);
 
             boolean bothGreen = (s1[i] == 2 && s2[i] == 2);
-            boolean oneGreen = (s1[i] == 2 && s2[i] != 2) || (s1[i] != 2 && s2[i] == 2);
+            boolean oneGreen = (s1[i] == 2 && s2[i] != 2)
+                    || (s1[i] != 2 && s2[i] == 2);
             boolean anyYellow = (s1[i] == 1 || s2[i] == 1);
 
             if (bothGreen) {
@@ -179,5 +156,14 @@ public class Xordle {
 
         IO.print(" | ");
         IO.println("");
+    }
+
+    // Accessor methods (required by your VisibilityModifier rule)
+    int getLetters() {
+        return letters;
+    }
+
+    Language getLang() {
+        return lang;
     }
 }

@@ -1,28 +1,29 @@
 public class Wordle {
-    int letters;
-    Language lang;
-    int words_count;
+    private int letters;
+    private Language lang;
+    private int wordsCount;
 
-    Wordle(int words_count, int letters, Language lang) {
-        this.letters = letters;
-        this.lang = lang;
-        this.words_count = words_count;
+    Wordle(int wordsCountInput, int letterCount, Language language) {
+        this.letters = letterCount;
+        this.lang = language;
+        this.wordsCount = wordsCountInput;
 
         String[] list = lang.getWordList(letters);
 
         for (int i = 0; i < list.length; i++) {
             list[i] = list[i].toUpperCase();
         }
+
         // Hidden words for the game
-        String[] words = new String[words_count];
+        String[] words = new String[wordsCount];
 
         // Tracks whether each word has already been solved
-        boolean[] solved = new boolean[words_count];
+        boolean[] solved = new boolean[wordsCount];
 
         // Used to avoid selecting the same word twice
         boolean[] used = new boolean[list.length];
 
-        for (int i = 0; i < words_count; i++) {
+        for (int i = 0; i < wordsCount; i++) {
             int random;
             do {
                 random = (int) (Math.random() * list.length);
@@ -32,12 +33,12 @@ public class Wordle {
             words[i] = list[random];
             solved[i] = false;
         }
+
         int tries = 0;
-        int chances = words_count + 5;
-        String guess = "";
+        int chances = wordsCount + 5;
 
         // Print a header line for each word column
-        for (int i = 0; i < words_count; i++){
+        for (int i = 0; i < wordsCount; i++) {
             IO.print(" |   ");
             IO.print("Word: " + (i + 1));
             IO.print("  | ");
@@ -59,7 +60,7 @@ public class Wordle {
                 break;
             }
 
-            guess = IO.readln("Guess the word: ").trim().toUpperCase();
+            String guess = IO.readln("Guess the word: ").trim().toUpperCase();
 
             if (guess.length() != letters) {
                 IO.println("Your guess must be " + letters + " letters long.");
@@ -69,8 +70,7 @@ public class Wordle {
             tries++;
 
             // Process the guess for each hidden word
-            for (int w = 0; w < words_count; w++) {
-
+            for (int w = 0; w < wordsCount; w++) {
 
                 if (solved[w]) {
                     IO.print("Word " + (w + 1) + ": SOLVED! ");
@@ -86,7 +86,7 @@ public class Wordle {
                 String word = words[w];
 
                 // Remaining letters that can still be matched as yellow
-                char[] letter_in_word = word.toCharArray();
+                char[] lettersInWord = word.toCharArray();
 
                 // Tracks which positions are green
                 boolean[] green = new boolean[letters];
@@ -96,7 +96,7 @@ public class Wordle {
                     char c = guess.charAt(i);
                     if (c == word.charAt(i)) {
                         green[i] = true;
-                        letter_in_word[i] = 0; // consume this letter
+                        lettersInWord[i] = 0; // consume this letter
                     }
                 }
 
@@ -107,15 +107,14 @@ public class Wordle {
                     char c = guess.charAt(i);
 
                     if (green[i]) {
-                        // Correct letter in correct position
                         IO.print(ConsoleColors.GREEN_BACKGROUND + c + ConsoleColors.RESET + " ");
                     } else {
                         boolean found = false;
 
                         // Check if the letter exists elsewhere in the word
                         for (int j = 0; j < letters; j++) {
-                            if (letter_in_word[j] == c) {
-                                letter_in_word[j] = 0; // consume one occurrence
+                            if (lettersInWord[j] == c) {
+                                lettersInWord[j] = 0; // consume one occurrence
                                 found = true;
                                 break;
                             }
@@ -133,6 +132,7 @@ public class Wordle {
 
             IO.println(" Remaining guesses: " + (chances - tries));
         }
+
         boolean allSolved = true;
         for (int i = 0; i < solved.length; i++) {
             if (!solved[i]) {
@@ -148,5 +148,18 @@ public class Wordle {
                 IO.println(words[i]);
             }
         }
+    }
+
+    // Accessor methods (required by your VisibilityModifier rule)
+    int getLetters() {
+        return letters;
+    }
+
+    Language getLang() {
+        return lang;
+    }
+
+    int getWordsCount() {
+        return wordsCount;
     }
 }

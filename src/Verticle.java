@@ -1,10 +1,10 @@
 public class Verticle {
-    int letters;
-    Language lang;
+    private int letters;
+    private Language lang;
 
-    Verticle(int letters, Language lang) {
-        this.letters = letters;
-        this.lang = lang;
+    Verticle(int letterCount, Language language) {
+        this.letters = letterCount;
+        this.lang = language;
 
         String[] list = lang.getWordList(letters);
         for (int i = 0; i < list.length; i++) {
@@ -24,8 +24,8 @@ public class Verticle {
         int[][] boardColor = new int[letters][chances];   // 0=grey, 1=yellow, 2=green
 
         while (tries < chances) {
-
-            String guess = IO.readln("Guess the word (column " + (tries + 1) + "): ").trim().toUpperCase();
+            String guess = IO.readln("Guess the word (column " + (tries + 1) + "): ")
+                    .trim().toUpperCase();
 
             if (guess.length() != letters) {
                 IO.println("Your guess must be " + letters + " letters long.");
@@ -50,9 +50,9 @@ public class Verticle {
 
                         if (color == 2) {
                             IO.print(ConsoleColors.GREEN_BACKGROUND + letter + ConsoleColors.RESET + " ");
-                        }else if (color == 1) {
+                        } else if (color == 1) {
                             IO.print(ConsoleColors.YELLOW_BACKGROUND + letter + ConsoleColors.RESET + " ");
-                        }else{
+                        } else {
                             IO.print(ConsoleColors.BLACK_BACKGROUND + letter + ConsoleColors.RESET + " ");
                         }
                     }
@@ -73,7 +73,6 @@ public class Verticle {
             int[] status = new int[letters];
 
             // PASS 1: mark EXACTLY ONE GREEN for this column (if possible)
-            // We choose the first occurrence in the guess (top-to-bottom).
             boolean greenUsed = false;
 
             for (int r = 0; r < letters; r++) {
@@ -83,9 +82,9 @@ public class Verticle {
                     // consume ONE occurrence of target from remaining (must exist)
                     for (int j = 0; j < letters; j++) {
                         if (remaining[j] == c) {
-                            remaining[j] = 0;     // consume
-                            status[r] = 2;        // green
-                            greenUsed = true;     // only one green allowed
+                            remaining[j] = 0;  // consume
+                            status[r] = 2;     // green
+                            greenUsed = true;  // only one green allowed
                             break;
                         }
                     }
@@ -103,7 +102,7 @@ public class Verticle {
 
                 for (int j = 0; j < letters; j++) {
                     if (remaining[j] == c) {
-                        remaining[j] = 0;  // consume
+                        remaining[j] = 0; // consume
                         found = true;
                         break;
                     }
@@ -111,8 +110,8 @@ public class Verticle {
 
                 if (found) {
                     status[r] = 1; // yellow
-                }else{
-                    status[r] = 0;       // grey
+                } else {
+                    status[r] = 0; // grey
                 }
             }
 
@@ -130,9 +129,9 @@ public class Verticle {
 
                     if (col == 2) {
                         IO.print(ConsoleColors.GREEN_BACKGROUND + ch + ConsoleColors.RESET + " ");
-                    }else if (col == 1) {
+                    } else if (col == 1) {
                         IO.print(ConsoleColors.YELLOW_BACKGROUND + ch + ConsoleColors.RESET + " ");
-                    }else{
+                    } else {
                         IO.print(ConsoleColors.BLACK_BACKGROUND + ch + ConsoleColors.RESET + " ");
                     }
                 }
@@ -145,8 +144,17 @@ public class Verticle {
 
         if (solved) {
             IO.println("Congratulations! You got the word!");
-        }else{
+        } else {
             IO.println("You lost. The word was " + word);
         }
+    }
+
+    // Accessor methods (required by your VisibilityModifier rule)
+    int getLetters() {
+        return letters;
+    }
+
+    Language getLang() {
+        return lang;
     }
 }
