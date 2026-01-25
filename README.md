@@ -43,10 +43,13 @@ The game modes used on my programm and researched about them were based on alrea
 #### Geeksforseeks
 - Further research about multidimensional arrays here: https://www.geeksforgeeks.org/java/multidimensional-arrays-in-java/
 
+#### Spellchecker
+- Spellchecker plug-in was used to improve code structure. To better understand which problems there were, this website was used: https://checkstyle.org/config.html#Checker
+
 ### Opensource AI
 For guiding methods and correction purposes, Chatgpt was used.
 
-### Peer interaction
+### Peer and professor interaction
 Through exchange of ideas and knowledge, more diverse aspects and functions could be applied on this project
 
 ## License
