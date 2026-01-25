@@ -79,7 +79,7 @@ public class Language {
                         "ecke","edel","egal","eher","eide","eife","eile","elbe","elfe","elle",
                         "ende","enge","ente","erbe","erde","erst","esse","fahl","fakt","fall",
                         "fand","fang","faul","feld","fell","fern","fest","fett","fiel","fink",
-                        "flei","flog","flug","flut","foss","frei","frem","froh",
+                        "flei","flog","flug","flut","foss","frei","froh",
                         "gans","garn","gast","gern","gier","gift","gilt","glas","glut","gold",
                         "gott","grad","gras","greb","grit","gute","halb","hall","halt","hand",
                         "hang","hart","haut","heck","heft","heil","heim","held","hell","herb",

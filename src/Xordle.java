@@ -158,7 +158,7 @@ public class Xordle {
         IO.println("");
     }
 
-    // Accessor methods (required by your VisibilityModifier rule)
+    // Accessor methods (required by VisibilityModifier rule)
     int getLetters() {
         return letters;
     }

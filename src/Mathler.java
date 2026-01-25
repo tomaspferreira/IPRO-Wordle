@@ -66,13 +66,13 @@ public class Mathler {
             }
 
             // Arrays used to evaluate the equation with precedence
-            int[] numbers2 = new int[numbers.length];
-            char[] ops2 = new char[eqOps.length];
+            int[] numbersNew = new int[numbers.length];
+            char[] opsNew = new char[eqOps.length];
 
             int nrCount = 0;
             int oCount = 0;
 
-            numbers2[nrCount] = numbers[0];
+            numbersNew[nrCount] = numbers[0];
             nrCount++;
 
             // First evaluation pass: collapse all * and / operations
@@ -81,33 +81,30 @@ public class Mathler {
                 int right = numbers[i + 1];
 
                 if (op == '*' || op == '/') {
-                    int left = numbers2[nrCount - 1];
+                    int left = numbersNew[nrCount - 1];
                     if (op == '*') {
-                        numbers2[nrCount - 1] = left * right;
+                        numbersNew[nrCount - 1] = left * right;
                     } else {
-                        numbers2[nrCount - 1] = left / right;
+                        numbersNew[nrCount - 1] = left / right;
                     }
                 } else {
-                    ops2[oCount] = op;
+                    opsNew[oCount] = op;
                     oCount++;
-                    numbers2[nrCount] = right;
+                    numbersNew[nrCount] = right;
                     nrCount++;
                 }
             }
 
             // Second evaluation pass: only + and - remain
-            result = numbers2[0];
+            result = numbersNew[0];
             for (int i = 0; i < oCount; i++) {
-                if (ops2[i] == '+') {
-                    result += numbers2[i + 1];
+                if (opsNew[i] == '+') {
+                    result += numbersNew[i + 1];
                 } else {
-                    result -= numbers2[i + 1];
+                    result -= numbersNew[i + 1];
                 }
             }
         } while (result < 0);
-
-        IO.println(equation);
-        IO.println(result);
 
         boolean solved = false;
 
@@ -193,7 +190,7 @@ public class Mathler {
         }
     }
 
-    // Accessor method required by your VisibilityModifier rule
+    // Accessor method required by VisibilityModifier rule
     int getLength() {
         return length;
     }

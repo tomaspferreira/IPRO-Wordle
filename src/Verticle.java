@@ -125,11 +125,11 @@ public class Verticle {
             for (int r = 0; r < letters; r++) {
                 for (int c = 0; c <= tries; c++) {
                     char ch = boardChars[r][c];
-                    int col = boardColor[r][c];
+                    int color = boardColor[r][c];
 
-                    if (col == 2) {
+                    if (color == 2) {
                         IO.print(ConsoleColors.GREEN_BACKGROUND + ch + ConsoleColors.RESET + " ");
-                    } else if (col == 1) {
+                    } else if (color == 1) {
                         IO.print(ConsoleColors.YELLOW_BACKGROUND + ch + ConsoleColors.RESET + " ");
                     } else {
                         IO.print(ConsoleColors.BLACK_BACKGROUND + ch + ConsoleColors.RESET + " ");
