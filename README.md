@@ -3,9 +3,6 @@
 ## Description
 Wordle is a word game where the player has to guess a mystery word. The mystery word is predefined by the number of letters and how many there are, as well as how many guesses the player has to guess it. After each player guess, the game shows which letters coincide with the mystery word. If the letter is in the correct spot, it will turn green. If the a letter exists in the mystery word but it is in the wrong spot, it will turn yellow. Otherwise, it will be greyed out. The game ends when the player guesses the word or they run out of guesses.
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
-
 ## Visuals
 Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
 
@@ -21,7 +18,7 @@ On any questions or suggestions, I am avaiable per mail:
 tomas.ferreira@students.fhnw.ch
 
 ## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+A possible idea for the future is to make Self-made wordle a multiplayer game, meaning being able to play either with or against other players on two different devices.
 
 ## Authors and acknowledgment
 ### Game modes: 
@@ -43,10 +40,19 @@ The game modes used on my programm and researched about them were based on alrea
 #### Geeksforseeks
 - Further research about multidimensional arrays here: https://www.geeksforgeeks.org/java/multidimensional-arrays-in-java/
 
+#### Checkstyle
+- Checkstyle plug-in was used to improve code structure. To better understand which problems there were, this website was used: https://checkstyle.org/config.html#Checker
+
+#### Wordlist
+- For the English wordlist, this website was used: https://wordraiders.com/wordle-words/
+- For the German wordlist, this website was used: https://www.wort-suchen.de/woerterbuch/
+- For the dictionairies, Chromium was used: https://chromium.googlesource.com/chromium/deps/hunspell/%2B/9f292621c01a6708cd35416c4482ba5d6881186f/dictionaries?
+- For the libraries, this repo was used: https://github.com/LibreOffice/dictionaries
+
 ### Opensource AI
 For guiding methods and correction purposes, Chatgpt was used.
 
-### Peer interaction
+### Peer and professor interaction
 Through exchange of ideas and knowledge, more diverse aspects and functions could be applied on this project
 
 ## License
