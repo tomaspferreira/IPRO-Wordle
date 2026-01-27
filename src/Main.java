@@ -6,17 +6,19 @@ public final class Main {
         String language = IO.readln("Which language do you prefer? (en/de): ")
                 .toLowerCase();
 
-        while (!language.equals("en") && !language.equals("de")) {
-            language = IO.readln(
-                    "That option doesn't exist. Please make sure you typed one of the options.\n"
-            ).toLowerCase();
-        }
+        while (!language.equals("en") && !language.equals("de")) language = IO.readln(
+                "That option doesn't exist. Please make sure you typed one of the options.\n"
+        ).toLowerCase();
 
         Language lang = new Language(language);
+        HunspellChecker.init(language);
+
 
         String gamemode = IO.readln(
-                "Which game do you want to play?\n"
-                        + "Wordle   Xordle   Verticle   Mathler\n"
+                """
+                        Which game do you want to play?
+                        Wordle   Xordle   Verticle   Mathler
+                        """
         ).toLowerCase();
 
         while (!gamemode.equals("wordle")

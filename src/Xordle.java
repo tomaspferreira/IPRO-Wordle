@@ -1,17 +1,18 @@
 public class Xordle {
-
-    private int letters;
-    private Language lang;
+    /**
+     * Amount of letter that the word should have
+     */
+    private final int letters;
+    /**
+     *
+     */
+    private final Language lang;
 
     Xordle(int letterCount, Language language) {
         this.letters = letterCount;
         this.lang = language;
 
         String[] list = lang.getWordList(letters);
-
-        for (int i = 0; i < list.length; i++) {
-            list[i] = list[i].toUpperCase();
-        }
 
         String[] words = new String[2];
         boolean[] solved = new boolean[2];
@@ -46,13 +47,19 @@ public class Xordle {
                 break;
             }
 
-            String guess = IO.readln("Guess the word: ").trim().toUpperCase();
+            String guessRaw = IO.readln("Guess the word: ").trim();
 
-            if (guess.length() != letters) {
+            if (guessRaw.length() != letters) {
                 IO.println("Your guess must be " + letters + " letters long.");
                 continue;
             }
 
+            if (!HunspellChecker.isValidWord(guessRaw)) {
+                IO.println("Not a valid word.");
+                continue;
+            }
+
+            String guess = guessRaw.toUpperCase();
             tries++;
 
             for (int w = 0; w < 2; w++) {

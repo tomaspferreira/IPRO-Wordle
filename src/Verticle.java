@@ -7,9 +7,6 @@ public class Verticle {
         this.lang = language;
 
         String[] list = lang.getWordList(letters);
-        for (int i = 0; i < list.length; i++) {
-            list[i] = list[i].toUpperCase();
-        }
 
         int random = (int) (Math.random() * list.length);
         String word = list[random];
@@ -24,13 +21,19 @@ public class Verticle {
         int[][] boardColor = new int[letters][chances];   // 0=grey, 1=yellow, 2=green
 
         while (tries < chances) {
-            String guess = IO.readln("Guess the word (column " + (tries + 1) + "): ")
-                    .trim().toUpperCase();
+            String guessRaw = IO.readln("Guess the word (column " + (tries + 1) + "): ").trim();
 
-            if (guess.length() != letters) {
+            if (guessRaw.length() != letters) {
                 IO.println("Your guess must be " + letters + " letters long.");
                 continue;
             }
+
+            if (!HunspellChecker.isValidWord(guessRaw)) {
+                IO.println("Not a valid word.");
+                continue;
+            }
+
+            String guess = guessRaw.toUpperCase();
 
             // If guessed the full word correctly, win
             if (guess.equals(word)) {

@@ -10,10 +10,6 @@ public class Wordle {
 
         String[] list = lang.getWordList(letters);
 
-        for (int i = 0; i < list.length; i++) {
-            list[i] = list[i].toUpperCase();
-        }
-
         // Hidden words for the game
         String[] words = new String[wordsCount];
 
@@ -35,7 +31,7 @@ public class Wordle {
         }
 
         int tries = 0;
-        int chances = wordsCount + 5;
+        int chances = wordsCount + letters;
 
         // Print a header line for each word column
         for (int i = 0; i < wordsCount; i++) {
@@ -60,13 +56,19 @@ public class Wordle {
                 break;
             }
 
-            String guess = IO.readln("Guess the word: ").trim().toUpperCase();
+            String guessRaw = IO.readln("Guess the word: ").trim();
 
-            if (guess.length() != letters) {
+            if (guessRaw.length() != letters) {
                 IO.println("Your guess must be " + letters + " letters long.");
                 continue;
             }
 
+            if (!HunspellChecker.isValidWord(guessRaw)) {
+                IO.println("Not a valid word.");
+                continue;
+            }
+
+            String guess = guessRaw.toUpperCase();
             tries++;
 
             // Process the guess for each hidden word

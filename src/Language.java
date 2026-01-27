@@ -1,147 +1,89 @@
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+
 public class Language {
-    String language;
-    String[] list;
+    private String languageCode;
 
-    Language(String language){
-        this.language = language.toLowerCase();
+    // Cache: index = letters, stores loaded list (null = not loaded yet)
+    private String[][] cache = new String[21][];
 
+    Language(String languageCodeInput) {
+        this.languageCode = languageCodeInput.toLowerCase();
     }
-    String[] getWordList(int letters){
-        if (language.equals("en")) {
-            if (letters == 4) {
-                list = new String[]{"able", "acid", "aged", "also", "area", "army", "away", "baby", "back", "ball",
-                        "band", "bank", "base", "bath", "bear", "beat", "been", "beer", "bell", "belt",
-                        "best", "bill", "bird", "blow", "blue", "boat", "body", "bomb", "bond", "bone",
-                        "book", "boom", "boot", "born", "boss", "both", "bowl", "bulk", "burn", "bush",
-                        "busy", "cafe", "cake", "call", "calm", "came", "camp", "care", "carry", "case",
-                        "cash", "cast", "cell", "chat", "chip", "city", "clay", "club", "coal", "coat",
-                        "code", "cold", "come", "cook", "cool", "copy", "core", "cost", "crew", "crop",
-                        "dark", "data", "date", "dawn", "days", "dead", "deal", "dear", "deep", "desk",
-                        "dial", "diet", "dish", "done", "door", "down", "draw", "drop", "drug", "duck",
-                        "duty", "each", "earn", "ease", "east", "easy", "edge", "else", "even", "ever",
-                        "evil", "exit", "face", "fact", "fail", "fair", "fall", "farm", "fast", "fear",
-                        "feed", "feel", "feet", "file", "fill", "film", "find", "fine", "fire", "firm",
-                        "fish", "five", "flat", "flow", "food", "foot", "form", "four", "free", "from",
-                        "fuel", "full", "fund", "gain", "game", "gate", "gave", "gear", "gift", "girl",
-                        "give", "glad", "goal", "goes", "gold", "golf", "gone", "good", "gray", "grey",
-                        "grow", "gulf", "hair", "half", "hall", "hand", "hang", "hard", "harm", "hate",
-                        "have", "head", "hear", "heat", "held", "help", "here", "hero", "high", "hill",
-                        "hire", "hold", "hole", "home", "hope", "horn", "host", "hour", "huge", "hung",
-                        "hunt", "idea", "inch", "into", "iron", "item", "jazz", "join", "jump", "jury",
-                        "just", "keep", "kept", "kick", "kind", "king", "kiss", "knee", "knew", "know",
-                        "lack", "lady", "lake", "land", "lane", "last", "late", "lead", "leaf", "lean",
-                        "left", "less", "life", "lift", "like", "line", "link", "list", "live", "load",
-                        "loan", "lock", "logo", "long", "look", "lose", "lost", "love", "luck", "made",
-                        "mail", "main", "make", "male", "many", "mark", "mass", "meal", "mean", "meet",
-                        "menu", "mere", "mile", "milk", "mill", "mind", "mine", "miss", "mode", "more",
-                        "most", "move", "much", "must", "name", "navy", "near", "neck", "need", "news",
-                        "next", "nice", "nick", "nine", "none", "nose", "note", "okay", "once", "only",
-                        "onto", "open", "oral", "over", "pace", "pack", "page", "paid", "pain", "pair",
-                        "palm", "park", "part", "pass", "past", "path", "peak", "pick", "pipe", "plan",
-                        "play", "plot", "plug", "plus", "port", "post", "pull", "pure", "push", "race",
-                        "rail", "rain", "rank", "rare", "read", "real", "rear", "rely", "rent", "rest",
-                        "rice", "rich", "ride", "ring", "rise", "risk", "road", "rock", "roof", "room",
-                        "root", "rose", "rule", "safe", "said", "sail", "salt", "sand", "save", "seat",
-                        "seed", "seek", "seem", "seen", "self", "sell", "send", "sent", "ship", "shop",
-                        "shot", "show", "shut", "sick", "side", "sign", "site", "size"};
-            } else if (letters == 5) {
-                list = new String[]{"place", "house", "venus", "catch", "court", "stick", "quark", "forks", "apple", "brave", "cabin", "delta", "eagle", "flora", "grape", "honey", "ivory", "joker",
-                        "kneel", "linen", "mango", "naval", "ocean", "petal", "quilt", "raven", "solar", "tiger",
-                        "union", "vivid", "whale", "xenon", "youth", "zesty", "angle", "blaze", "crown", "draft",
-                        "ember", "forge", "glide", "harsh", "ideal", "jelly", "karma", "laser", "medal", "nylon",
-                        "orbit", "prism", "quark", "rural", "spice", "trend", "ultra", "vapor", "woven", "yeast",
-                        "abide", "bloom", "crane", "drove", "elite", "frost", "gloom", "haste", "inlet", "judge",
-                        "knead", "latch", "mirth", "nerve", "olive", "piano", "quota", "roast", "shore", "theme",
-                        "urban", "vital", "worry", "xylem", "young", "zebra", "acorn", "brink", "chase", "daisy",
-                        "entry", "fable", "giant", "haunt", "inhale", "jumpy", "knock", "lunar", "motel", "noble",
-                        "opera", "punch", "quill", "risky", "slope", "tough", "upper", "value", "whirl", "xenial",
-                        "yacht", "zonal", "ample", "berry", "charm", "dwell", "fancy", "glory", "hedge", "infer",
-                        "jolly", "kites", "loyal", "march", "nerdy", "oxide", "penny", "quiet", "rally", "saint",
-                        "thick", "udder", "vigor", "wheat", "xenon", "yodel", "azure", "briar", "cider", "dodge",
-                        "fairy", "greet", "hatch", "inner", "jaunt", "karma", "lodge", "moral", "niche", "optic",
-                        "plead", "quirk", "ruler", "slice", "torch", "unity", "verge", "witty", "yearn", "zesty",
-                        "adore", "bluff", "cubic", "dizzy", "feast", "grasp", "humid", "irate", "joint", "knelt",
-                        "lilac", "mimic", "nylon", "orbit", "plaid", "quiet", "ridge", "stark", "tulip", "vixen",
-                        "wider", "yummy", "zippy", "arise", "boost", "clang", "drape", "excel", "flame", "guile",
-                        "haste", "imply", "jewel", "kneel", "latch", "mossy", "nudge", "ovary", "proud", "quark",
-                        "risky", "shade", "trial", "vouch", "woven", "youth", "zesty", "banjo", "chalk", "demon",
-                        "flick", "grind", "hover", "index", "jumpy", "krill", "lyric", "mango", "ninth", "other",
-                        "pound", "quasi", "ranch", "shear", "tinge", "vault", "wring", "yanks", "zonal", "aroma"};
-            }
-        } else if(language.equals("de")){
-            if (letters==4){
-                list = new String[]{"acht","ader","affe","ahne","ahnt","alle","also","amen","auge","auto",
-                        "bach","bade","bahn","bald","ball","band","bank","bart","baum","bauk",
-                        "beet","bein","berg","bett","bier","bild","biss","blau","blei","blut",
-                        "bock","boot","bord","boss","brot","buch","bude","bunt","camp","chef",
-                        "chor","club","dach","dame","dank","darf","data","endein","denk","dick",
-                        "dieb","ding","doof","dorf","doro","dose","drei","drin","duft","echt",
-                        "ecke","edel","egal","eher","eide","eife","eile","elbe","elfe","elle",
-                        "ende","enge","ente","erbe","erde","erst","esse","fahl","fakt","fall",
-                        "fand","fang","faul","feld","fell","fern","fest","fett","fiel","fink",
-                        "flei","flog","flug","flut","foss","frei","froh",
-                        "gans","garn","gast","gern","gier","gift","gilt","glas","glut","gold",
-                        "gott","grad","gras","greb","grit","gute","halb","hall","halt","hand",
-                        "hang","hart","haut","heck","heft","heil","heim","held","hell","herb",
-                        "herd","hier","hies","hirt","hoch","holz","huhn","hund","hute","idee",
-                        "igel","ille","jagd","jahr","jens","kalt","kamm","kann","karg","karo",
-                        "kass","katz","keke","keks","kiel","kilo","kind","kino","kipp","klug",
-                        "knie","knor","kohl","koch","kopf","korn","kram","kran","krug","kuhl",
-                        "kuss","lade","lage","lahm","lamm","lang","lass","leit","leis","leid",
-                        "lein","lena","loch","lobe","lohn","lose","luft","luge","mahl","malt",
-                        "mann","marg","mark","matt","mehr","mein","meid","mild","mini","mohn",
-                        "mund","muss","nach","nase","nett","neue","neun","nick","nied","nixe",
-                        "nord","note","null","nuss","ober","ofen","ohne","ohrn","open","paar",
-                        "pack","park","pass","pech","pein","pfer","puls","pump","qual","quer",
-                        "rabe","rade","rain","rand","rang","rast","raub","raum","reif","rein",
-                        "reis","rest","ritt","roch","rose","rost","rufn","ruhm","rund","saft",
-                        "sage","samt","sand","sang","satz","saug","sehe","seht",
-                        "sein","sich","sieg","sinn","soll","solo","song","sorg","sper","spur",
-                        "stab","star","steil","stern","stir","stor","such","sump","takt","tall",
-                        "tanz","tarn","taub","team","teil","tief","tier","tipp","toll","tora",
-                        "trag","tret","trug","tuer","ufer","ulme","umso","unre","urne","veil",
-                        "vier","voll","waag","wade","wahl","wald","wand","ware","warm","watt",
-                        "wehe","wehr","weil","wein","weis","welt","wert","wett","wien","wirt",
-                        "wolf","woll","wort","zack","zahn","zahl","zaun","zehn","zeit","zelt",
-                        "zoll","zone","zopf","zorn","zuck","zuer","zugt","zume"};
-            } else if (letters==5){
-                list = new String[]{"apfel","ahorn","acker","adler","agent","angel","antik","anzug","arche","armen",
-                        "armut","asche","atlas","autor","baden","banal","barde","bauch","bauer","beere",
-                        "beile","beleg","berge","beruf","besen","beton","beute","biene","birke","birne",
-                        "blatt","blase","blick","blitz","blume","bogen","boden","bonus","borke","brand",
-                        "brief","bring","bruch","bucht","chlor","creme","dachs","damen",
-                        "dampf","danke","decke","diele","dinge","dosen","draht","drama","dreck","droge",
-                        "eiche","eifer","eigen","eilig","eimer","eisen","eitel","eklat","engel",
-                        "ernte","essen","faden","fahne","falle","farbe","faser","feder","feind","feuer",
-                        "fibel","fisch","flach","flair","flink","flora","fluch","folge","forst","frage",
-                        "freak","fuchs","funke","gabel","galle","gasse","geist","gelbe","genau","genie",
-                        "gerte","geste","glanz","gleis","glimm","gnade","golem","grube","grund","hafen",
-                        "hafer","hagen","halle","hallo","hauch","haken","harfe","hauer",
-                        "heben","hecke","hefte","heiss","herde","hilfe","holen","honig","hosen",
-                        "humor","hupen","immer","innen","insel","irren","jagen","jeder","jetzt","joker",
-                        "kabel","kader","kakao","kamin","kante","kater","kegel","kerbe","kerze","kette",
-                        "keule","kiese","kiste","klaue","kleid","klick","kling","klima","kloss","knabe",
-                        "knall","knopf","kohle","kombi","krach","kranz","kraut","krebs","kreuz","krieg",
-                        "krimi","kugel","kunst","kurve","laden","lager","lampe","lange","lauer","leben",
-                        "leder","legen","lehre","leine","leise","licht","linie","linde","liter","lobby",
-                        "logik","lokus","lunge","macht","magen","makel","markt","maske","mauer","meile",
-                        "meine","meise","meter","milch","minen","mitte","modal","monat","motiv","moped",
-                        "motor","nacht","nadel","nager","nagel","nahme","nasen","nebel","neffe","nicht",
-                        "niete","nudel","nuten","ohren","olive","onkel","orden","orgel","pacht",
-                        "panik","pause","perle","pfand","pferd","pflug","pilze","platt","pokal",
-                        "preis","probe","pumpe","qualm","quelle","rauch","raupe","recht","reden","regen",
-                        "reich","reise","rinde","ringe","rispe","rolle","roman","rosen","ruhig","runde",
-                        "salbe","salat","salto","samen","sauer","sauna","schaf","schal","scheu",
-                        "segel","segen","seite","sekte","selbe","senat","serum","silbe","sinne","sirup",
-                        "sitte","socke","sohle","sonde","sonne","speck","spiel","spitz","spore","sport",
-                        "stark","staub","stein","stern","stich","stift","stuhl","sturm","suche","suppe",
-                        "tadel","taler","tante","tapir","tasse","taste","tempo","tisch","titel","tonne",
-                        "traum","trieb","trick","trost","tulpe","tumor","turbo","typen","umweg","unmut",
-                        "unser","vater","vegan","villa","vogel","voten","wache","wafel","welle","werft",
-                        "werte","wesen","wiese","wette","wicht","winde","wolle","worte","wunde",
-                        "wurst","wurde","zaehl","zange","zeder","ziege","zitat","zolle","zuber","zunge"};
-            }
+
+    String[] getWordList(int letters) {
+        if (letters < 1 || letters >= cache.length) {
+            return new String[0];
         }
-        return list;
+
+        // Return cached version if already loaded
+        if (cache[letters] != null) {
+            return cache[letters];
+        }
+
+        String fileName = "words/" + languageCode + "_" + letters + ".txt";
+
+        String[] loaded = loadWordsFromResource(fileName, letters);
+
+        // Cache it (even if empty) so we don't try again every time
+        cache[letters] = loaded;
+
+        return loaded;
+    }
+
+    private String[] loadWordsFromResource(String fileName, int letters) {
+        InputStream in = Language.class.getClassLoader().getResourceAsStream(fileName);
+        if (in == null) {
+            IO.println("Could not find resource file: " + fileName);
+            return new String[0];
+        }
+
+        // Simple dynamic array (no ArrayList needed)
+        String[] temp = new String[1024];
+        int count = 0;
+
+        try {
+            BufferedReader br = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
+            String line;
+
+            while ((line = br.readLine()) != null) {
+                String w = line.trim();
+                if (w.isEmpty()) {
+                    continue;
+                }
+
+                // Keep only correct length (safety)
+                if (w.length() != letters) {
+                    continue;
+                }
+
+                // Store uppercase, because your games convert to uppercase
+                w = w.toUpperCase();
+
+                if (count == temp.length) {
+                    String[] bigger = new String[temp.length * 2];
+                    for (int i = 0; i < temp.length; i++) {
+                        bigger[i] = temp[i];
+                    }
+                    temp = bigger;
+                }
+
+                temp[count] = w;
+                count++;
+            }
+
+        } catch (Exception e) {
+            IO.println("Error reading: " + fileName);
+            return new String[0];
+        }
+
+        String[] result = new String[count];
+        for (int i = 0; i < count; i++) {
+            result[i] = temp[i];
+        }
+
+        return result;
     }
 }

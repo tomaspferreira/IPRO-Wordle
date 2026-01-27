@@ -11,12 +11,12 @@ public class Gamemode {
                     IO.readln("How many mystery words do you want to guess? (1, 2, 4, 8, 16, 32) ")
             );
 
-            while (wordsInput != 1
-                    && wordsInput != 2
-                    && wordsInput != 4
-                    && wordsInput != 8
-                    && wordsInput != 16
-                    && wordsInput != 32) {
+            while ((wordsInput != 1)
+                    && (wordsInput != 2)
+                    && (wordsInput != 4)
+                    && (wordsInput != 8)
+                    && (wordsInput != 16)
+                    && (wordsInput != 32)) {
                 wordsInput = Integer.parseInt(
                         IO.readln("Please select one of the possible options: ")
                 );
