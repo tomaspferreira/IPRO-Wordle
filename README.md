@@ -47,7 +47,7 @@ The game modes used on my programm and researched about them were based on alrea
 - For the English wordlist, this website was used: https://wordraiders.com/wordle-words/
 - For the German wordlist, this website was used: https://www.wort-suchen.de/woerterbuch/
 - For the dictionairies, Chromium was used: https://chromium.googlesource.com/chromium/deps/hunspell/%2B/9f292621c01a6708cd35416c4482ba5d6881186f/dictionaries?
-- For the libraries, this repo was used: https://mvnrepository.com/artifact/com.nikialeksey/jhunspell
+- For the libraries, this repo was used: https://github.com/LibreOffice/dictionaries
 
 ### Opensource AI
 For guiding methods and correction purposes, Chatgpt was used.
