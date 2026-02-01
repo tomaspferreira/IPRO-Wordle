@@ -93,7 +93,7 @@ public class StartMenu extends Application {
     }
 
     private Scene SettingsScene(Stage stage, Scene startMenuScene, String language, String mode) {
-        Label title = new Label(mode.substring(0, 1).toUpperCase() + mode.substring(1));
+        Label title = new Label(mode);
         title.setStyle("-fx-font-size: 60px; -fx-font-weight: bold;");
         VBox.setMargin(title, new Insets(30, 0, 30, 0));
 
@@ -182,18 +182,26 @@ public class StartMenu extends Application {
         return settingsScene;
     }
 
-    private Scene createXordleScene(Stage stage, Scene backScene, String language, int letters) {
+    private Scene createXordleScene(Stage stage, Scene settingsScene, String language, int letters) {
 
-        int chances = letters + 4;
+        // Initialize logic once for this scene
+        Language lang = new Language(language);
+        XordleLogic game = new XordleLogic(letters, lang);
+
+        int chances = game.getChances();
 
         Label title = new Label("Xordle");
-        title.setStyle("-fx-font-size: 60px; -fx-font-weight: bold;");
+        title.setStyle("-fx-font-size: 48px; -fx-font-weight: bold;");
         BorderPane.setAlignment(title, Pos.CENTER);
         BorderPane.setMargin(title, new Insets(20, 0, 10, 0));
 
         Label message = new Label("");
         message.setStyle("-fx-text-fill: red; -fx-font-size: 16px;");
 
+        Label remaining = new Label("Guesses left: " + chances);
+        remaining.setStyle("-fx-font-size: 16px;");
+
+        // --- GRID ---
         GridPane grid = new GridPane();
         grid.setHgap(8);
         grid.setVgap(8);
@@ -213,9 +221,10 @@ public class StartMenu extends Application {
         }
 
         TextField input = new TextField();
-        input.setPromptText("Type guess here (" + letters + " letters)");
         input.setStyle("-fx-font-size: 18px;");
-        input.setMaxWidth(300);
+        input.setPromptText("Type guess here (" + letters + " letters)");
+        input.setMaxWidth(320);
+
 
         Button submitBtn = new Button("Submit");
         submitBtn.setPrefWidth(120);
@@ -226,11 +235,34 @@ public class StartMenu extends Application {
         backBtn.setPrefWidth(120);
         backBtn.setPrefHeight(45);
         backBtn.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
+        backBtn.setVisible(false);
+        backBtn.setManaged(false);
 
-        HBox bottomButtons = new HBox(15, backBtn, submitBtn);
+        Button giveUpBtn = new Button("Give up");
+        giveUpBtn.setPrefWidth(120);
+        giveUpBtn.setPrefHeight(45);
+        giveUpBtn.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
+
+        Label lost = new Label("You lost. The words were:");
+        lost.setStyle("-fx-font-size: 36px;");
+
+        Label wordOne = new Label(game.getWords()[0]);
+        wordOne.setStyle("-fx-font-size: 24px; -fx-font-weight: bold;");
+
+        Label wordTwo = new Label(game.getWords()[1]);
+        wordTwo.setStyle("-fx-font-size: 24px; -fx-font-weight: bold;");
+
+        Label won = new Label("You win!");
+        won.setStyle("-fx-font-size: 48px; -fx-font-weight: bold;");
+
+        HBox bottomButtons = new HBox(10, backBtn, giveUpBtn, submitBtn);
         bottomButtons.setAlignment(Pos.CENTER);
 
-        VBox bottom = new VBox(10, input, bottomButtons, message);
+        VBox losing = new VBox(15, lost, wordOne, wordTwo);
+        losing.setAlignment(Pos.CENTER);
+        losing.setPadding(new Insets(20));
+
+        VBox bottom = new VBox(10, input, bottomButtons, remaining, message);
         bottom.setAlignment(Pos.CENTER);
         bottom.setPadding(new Insets(20));
 
@@ -239,14 +271,43 @@ public class StartMenu extends Application {
         root.setCenter(grid);
         root.setBottom(bottom);
 
-        // --- STATE: current row ---
-        final int[] row = {0};
+        // Back button
+        backBtn.setOnAction(e -> stage.setScene(settingsScene));
+
+        giveUpBtn.setOnAction(e -> {
+            root.setCenter(losing);
+            input.setDisable(true);
+            submitBtn.setDisable(true);
+
+            giveUpBtn.setVisible(false);
+            giveUpBtn.setManaged(false);
+
+            backBtn.setVisible(true);
+            backBtn.setManaged(true);
+
+            message.setText("You gave up.");
+        });
+
+        // Helper: color styles
+        java.util.function.Function<XordleLogic.Tile, String> styleFor = tile -> {
+            if (tile == XordleLogic.Tile.GREEN) {
+                return "-fx-background-color: #4CAF50; -fx-text-fill: white;";
+            }
+            if (tile == XordleLogic.Tile.YELLOW) {
+                return "-fx-background-color: #C9B458; -fx-text-fill: white;";
+            }
+            if (tile == XordleLogic.Tile.BLUE) {
+                return "-fx-background-color: #3B82F6; -fx-text-fill: white;";
+            }
+            return "-fx-background-color: #787C7E; -fx-text-fill: white;"; // GREY
+        };
 
         Runnable submit = () -> {
             String guessRaw = input.getText().trim();
 
+            // UI validation first (so game doesn't consume a try)
             if (guessRaw.length() != letters) {
-                message.setText("Guess must be " + letters + " letters.");
+                message.setText("Guess must be exactly " + letters + " letters.");
                 return;
             }
 
@@ -255,27 +316,58 @@ public class StartMenu extends Application {
                 return;
             }
 
-            if (row[0] >= chances) {
-                message.setText("No guesses left.");
+            if (game.isGameOver()) {
+                message.setText("Game over.");
                 return;
             }
 
-            String guess = guessRaw.toUpperCase();
-
-            // Fill the current row with letters (placeholder coloring: grey)
-            for (int c = 0; c < letters; c++) {
-                char character = guess.charAt(c);
-                Label t = tiles[row[0]][c];
-                t.setText(String.valueOf(character));
-
-                // Placeholder: all grey for now (we will replace with Xordle colors later)
-                t.setStyle("-fx-border-color: #444; -fx-font-size: 20px; -fx-font-weight: bold;"
-                        + "-fx-background-color: #777; -fx-text-fill: white;");
+            // Submit to logic (this consumes a try)
+            XordleLogic.TurnResult r;
+            try {
+                r = game.submitGuess(guessRaw);
+            } catch (IllegalArgumentException ex) {
+                message.setText(ex.getMessage());
+                return;
             }
 
-            row[0]++;
+            int rowIndex = game.getTries() - 1; // the row that was just filled
+
+            // Paint row
+            for (int c = 0; c < letters; c++) {
+                Label t = tiles[rowIndex][c];
+                t.setText(String.valueOf(r.guess.charAt(c)));
+
+                String base = "-fx-border-color: #444; -fx-font-size: 20px; -fx-font-weight: bold; -fx-alignment: center;";
+                t.setStyle(base + styleFor.apply(r.tiles[c]));
+            }
+
+            remaining.setText("Guesses left: " + r.remainingGuesses);
+
+            if (r.gameWon) {
+                root.setCenter(won);
+                message.setStyle("-fx-text-fill: green; -fx-font-size: 16px;");
+                message.setText("You solved both words!");
+                input.setDisable(true);
+                submitBtn.setDisable(true);
+                giveUpBtn.setVisible(false);
+                giveUpBtn.setManaged(false);
+                backBtn.setVisible(true);
+                backBtn.setManaged(true);
+            } else if (r.gameOver) {
+                root.setCenter(losing);
+                message.setText("Out of guesses.");
+                input.setDisable(true);
+                submitBtn.setDisable(true);
+                giveUpBtn.setVisible(false);
+                giveUpBtn.setManaged(false);
+                backBtn.setVisible(true);
+                backBtn.setManaged(true);
+            } else {
+                message.setStyle("-fx-text-fill: red; -fx-font-size: 16px;");
+                message.setText("");
+            }
+
             input.clear();
-            message.setText("");
         };
 
         submitBtn.setOnAction(e -> submit.run());
@@ -285,8 +377,6 @@ public class StartMenu extends Application {
                 submit.run();
             }
         });
-
-        backBtn.setOnAction(e -> stage.setScene(backScene));
 
         return new Scene(root, 1000, 800);
     }
