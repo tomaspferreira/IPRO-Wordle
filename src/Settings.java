@@ -79,9 +79,9 @@ public class Settings extends VBox {
                 int wordsChosen = wordsBox.getValue();
                 nav.goToWordle(language, lettersChosen, wordsChosen);
             } else if (mode.equals("Xordle")) {
-                nav.goToXordle(language, lettersChosen); // GUI
+                nav.goToXordle(language, lettersChosen);
             } else if (mode.equals("Verticle")) {
-                new Verticle(lettersChosen, lang); // console for now
+                nav.goToVerticle(language, lettersChosen);
             } else if (mode.equals("Mathler")) {
                 int n = numbersBox.getValue();
                 new Mathler(n); // console for now

@@ -27,4 +27,8 @@ public class Navigator {
     public void goToXordle(String language, int letters) {
         stage.setScene(new Scene(new XordleView(this, language, letters), W, H));
     }
+
+    public void goToVerticle(String language, int letters) {
+        stage.setScene(new Scene(new VerticleView(this, language, letters), W, H));
+    }
 }
