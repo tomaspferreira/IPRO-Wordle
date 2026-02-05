@@ -4,7 +4,7 @@ import javafx.stage.Stage;
 public class Navigator {
     private final Stage stage;
 
-    // fixed window size for now (you can remove later)
+    // fixed window size for now
     private static final int W = 1000;
     private static final int H = 800;
 
@@ -31,4 +31,9 @@ public class Navigator {
     public void goToVerticle(String language, int letters) {
         stage.setScene(new Scene(new VerticleView(this, language, letters), W, H));
     }
+
+    public void goToMathler(int numbers) {
+        stage.setScene(new Scene(new MathlerView(this, numbers), W, H));
+    }
+
 }

@@ -14,6 +14,7 @@ public class Settings extends VBox {
         title.setStyle("-fx-font-size: 60px; -fx-font-weight: bold;");
         VBox.setMargin(title, new Insets(30, 0, 30, 0));
 
+        // --- LETTER SETTINGS (Wordle/Xordle/Verticle) ---
         Label lettersLabel = new Label("How many letters should the word have?");
         lettersLabel.setStyle("-fx-font-size: 24px;");
 
@@ -22,6 +23,7 @@ public class Settings extends VBox {
         lettersBox.getItems().addAll(4, 5, 6, 7);
         lettersBox.setValue(5);
 
+        // --- WORDLE extra setting ---
         Label wordsLabel = new Label("How many words do you want to guess?");
         wordsLabel.setStyle("-fx-font-size: 24px;");
 
@@ -36,6 +38,7 @@ public class Settings extends VBox {
         wordsBox.setVisible(isWordle);
         wordsBox.setManaged(isWordle);
 
+        // --- MATHLER setting ---
         Label numbersLabel = new Label("How many numbers do you want the equation to have?");
         numbersLabel.setStyle("-fx-font-size: 24px;");
 
@@ -50,11 +53,13 @@ public class Settings extends VBox {
         numbersBox.setVisible(isMathler);
         numbersBox.setManaged(isMathler);
 
+        // hide letter options when mathler
         lettersLabel.setVisible(!isMathler);
         lettersLabel.setManaged(!isMathler);
         lettersBox.setVisible(!isMathler);
         lettersBox.setManaged(!isMathler);
 
+        // --- Buttons ---
         Button playBtn = new Button("Play");
         playBtn.setPrefWidth(150);
         playBtn.setPrefHeight(60);
@@ -64,30 +69,34 @@ public class Settings extends VBox {
         backBtn.setPrefWidth(150);
         backBtn.setPrefHeight(60);
         backBtn.setStyle("-fx-font-size: 20px; -fx-font-weight: bold;");
-
         backBtn.setOnAction(e -> nav.goToStartMenu());
 
         HBox buttons = new HBox(20, backBtn, playBtn);
         buttons.setAlignment(Pos.CENTER);
         VBox.setMargin(buttons, new Insets(50, 0, 0, 0));
 
+        // --- Play handler ---
         playBtn.setOnAction(e -> {
-            int lettersChosen = lettersBox.getValue();
-            Language lang = new Language(language);
-
             if (mode.equals("Wordle")) {
+                int lettersChosen = lettersBox.getValue();
                 int wordsChosen = wordsBox.getValue();
                 nav.goToWordle(language, lettersChosen, wordsChosen);
+
             } else if (mode.equals("Xordle")) {
+                int lettersChosen = lettersBox.getValue();
                 nav.goToXordle(language, lettersChosen);
+
             } else if (mode.equals("Verticle")) {
+                int lettersChosen = lettersBox.getValue();
                 nav.goToVerticle(language, lettersChosen);
+
             } else if (mode.equals("Mathler")) {
-                int n = numbersBox.getValue();
-                new Mathler(n); // console for now
+                int length = numbersBox.getValue();
+                nav.goToMathler(length);
             }
         });
 
+        // --- VBox setup ---
         setSpacing(10);
         setPadding(new Insets(20));
         setAlignment(Pos.TOP_CENTER);
