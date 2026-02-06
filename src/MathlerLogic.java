@@ -4,7 +4,7 @@ public class MathlerLogic {
 
     public static class TurnResult {
         public final String guess;
-        public final Tile[] tiles; // length = equationLength
+        public final Tile[] tiles;
         public final int remainingGuesses;
         public final boolean gameWon;
         public final boolean gameOver;
@@ -18,40 +18,110 @@ public class MathlerLogic {
         }
     }
 
-    private final int numbersCount;      // how many numbers in equation
-    private final String equation;       // the hidden equation
-    private final int targetResult;      // result to show player
-    private final int chances;           // equation.length + 2
-    private int tries;
+    private final int numbersCount;
+
+    private final int target;
+    private final String equation;   // secret equation
+    private final int chances;
+
+    private int tries = 0;
+    private boolean solved = false;
 
     public MathlerLogic(int numbersCount) {
         this.numbersCount = numbersCount;
 
-        Generated g = generateEquation(numbersCount);
-        this.equation = g.equation;
-        this.targetResult = g.result;
+        // generate equation + target like your console code
+        char[] operators = {'+', '-', '*', '/'};
+        int result;
+        String eq;
 
+        do {
+            int[] numbers = new int[numbersCount];
+            char[] ops = new char[numbersCount - 1];
+
+            numbers[0] = 1 + (int) (Math.random() * 99);
+
+            int running = numbers[0];
+
+            for (int i = 0; i < ops.length; i++) {
+                char op = operators[(int) (Math.random() * operators.length)];
+                ops[i] = op;
+
+                if (op == '+' || op == '-') {
+                    numbers[i + 1] = 1 + (int) (Math.random() * 199);
+                    running = numbers[i + 1];
+                } else if (op == '*') {
+                    int factor = 2 + (int) (Math.random() * 10);
+                    numbers[i + 1] = factor;
+                    running *= factor;
+                } else {
+                    int[] divisors = new int[20];
+                    int count = 0;
+                    for (int d = 2; d <= 20; d++) {
+                        if (running % d == 0) divisors[count++] = d;
+                    }
+                    int divisor = (count == 0) ? 1 : divisors[(int) (Math.random() * count)];
+                    numbers[i + 1] = divisor;
+                    running /= divisor;
+                }
+            }
+
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < numbers.length; i++) {
+                sb.append(numbers[i]);
+                if (i < ops.length) sb.append(ops[i]);
+            }
+            eq = sb.toString();
+
+            // evaluate with precedence (same as your console version)
+            int[] numbersNew = new int[numbers.length];
+            char[] opsNew = new char[ops.length];
+
+            int nrCount = 0;
+            int oCount = 0;
+
+            numbersNew[nrCount++] = numbers[0];
+
+            for (int i = 0; i < ops.length; i++) {
+                char op = ops[i];
+                int right = numbers[i + 1];
+
+                if (op == '*' || op == '/') {
+                    int left = numbersNew[nrCount - 1];
+                    numbersNew[nrCount - 1] = (op == '*') ? (left * right) : (left / right);
+                } else {
+                    opsNew[oCount++] = op;
+                    numbersNew[nrCount++] = right;
+                }
+            }
+
+            result = numbersNew[0];
+            for (int i = 0; i < oCount; i++) {
+                if (opsNew[i] == '+') result += numbersNew[i + 1];
+                else result -= numbersNew[i + 1];
+            }
+
+        } while (result < 0);
+
+        this.target = result;
+        this.equation = eq;
         this.chances = equation.length() + 2;
-        this.tries = 0;
     }
 
-    public int getNumbersCount() { return numbersCount; }
-    public String getEquation() { return equation; } // only reveal on lose/give up
-    public int getTargetResult() { return targetResult; }
-    public int getEquationLength() { return equation.length(); }
+    public int getTarget() { return target; }
+    public String getEquation() { return equation; }
     public int getChances() { return chances; }
     public int getTries() { return tries; }
+    public int getEquationLength() { return equation.length(); }
 
-    public boolean isGameWon() { return tries > 0 && lastGuessWasExact; }
-    public boolean isGameOver() { return lastGuessWasExact || tries >= chances; }
-
-    private boolean lastGuessWasExact = false;
+    public boolean isGameWon() { return solved; }
+    public boolean isGameOver() { return solved || tries >= chances; }
 
     public TurnResult submitGuess(String guessRaw) {
         if (isGameOver()) {
             Tile[] empty = new Tile[equation.length()];
             for (int i = 0; i < empty.length; i++) empty[i] = Tile.GREY;
-            return new TurnResult("", empty, 0, lastGuessWasExact, true);
+            return new TurnResult("", empty, 0, isGameWon(), true);
         }
 
         String guess = guessRaw.trim();
@@ -60,31 +130,36 @@ public class MathlerLogic {
             throw new IllegalArgumentException("Your guess must be " + equation.length() + " characters long.");
         }
 
+        // Basic allowed chars check (digits and + - * /)
+        for (int i = 0; i < guess.length(); i++) {
+            char ch = guess.charAt(i);
+            boolean ok = (ch >= '0' && ch <= '9') || ch == '+' || ch == '-' || ch == '*' || ch == '/';
+            if (!ok) throw new IllegalArgumentException("Only digits and + - * / allowed.");
+        }
+
         tries++;
 
         if (guess.equals(equation)) {
-            lastGuessWasExact = true;
+            solved = true;
             Tile[] allGreen = new Tile[equation.length()];
             for (int i = 0; i < allGreen.length; i++) allGreen[i] = Tile.GREEN;
             return new TurnResult(guess, allGreen, Math.max(0, chances - tries), true, true);
         }
 
-        // Wordle-like duplicate-safe scoring for characters
         char[] remaining = equation.toCharArray();
         boolean[] green = new boolean[equation.length()];
         Tile[] out = new Tile[equation.length()];
 
-        // pass 1: greens
+        // pass 1 greens
         for (int i = 0; i < equation.length(); i++) {
-            char c = guess.charAt(i);
-            if (c == equation.charAt(i)) {
+            if (guess.charAt(i) == equation.charAt(i)) {
                 green[i] = true;
                 remaining[i] = 0;
                 out[i] = Tile.GREEN;
             }
         }
 
-        // pass 2: yellows/greys
+        // pass 2 yellows/greys
         for (int i = 0; i < equation.length(); i++) {
             if (green[i]) continue;
 
@@ -102,92 +177,7 @@ public class MathlerLogic {
             out[i] = found ? Tile.YELLOW : Tile.GREY;
         }
 
-        boolean over = tries >= chances;
+        boolean over = isGameOver();
         return new TurnResult(guess, out, Math.max(0, chances - tries), false, over);
-    }
-
-    // ----------------- equation generation (adapted from your console) -----------------
-
-    private static class Generated {
-        final int result;
-        final String equation;
-        Generated(int result, String equation) {
-            this.result = result;
-            this.equation = equation;
-        }
-    }
-
-    private static Generated generateEquation(int length) {
-        int result;
-        String equation;
-        int[] numbers = new int[length];
-        char[] ops = new char[length - 1];
-        char[] operators = {'+', '-', '*', '/'};
-
-        do {
-            equation = "";
-            numbers[0] = 1 + (int)(Math.random() * 99);
-
-            int running = numbers[0];
-
-            for (int i = 0; i < ops.length; i++) {
-                char op = operators[(int)(Math.random() * operators.length)];
-                ops[i] = op;
-
-                if (op == '+' || op == '-') {
-                    numbers[i + 1] = 1 + (int)(Math.random() * 199);
-                    running = numbers[i + 1];
-
-                } else if (op == '*') {
-                    int factor = 2 + (int)(Math.random() * 10);
-                    numbers[i + 1] = factor;
-                    running *= factor;
-
-                } else { // '/'
-                    int[] divisors = new int[20];
-                    int count = 0;
-                    for (int d = 2; d <= 20; d++) {
-                        if (running % d == 0) divisors[count++] = d;
-                    }
-                    int divisor = (count == 0) ? 1 : divisors[(int)(Math.random() * count)];
-                    numbers[i + 1] = divisor;
-                    running /= divisor;
-                }
-            }
-
-            for (int i = 0; i < numbers.length; i++) {
-                equation += numbers[i];
-                if (i < ops.length) equation += ops[i];
-            }
-
-            // evaluate with precedence
-            int[] numbersNew = new int[numbers.length];
-            char[] opsNew = new char[ops.length];
-            int nrCount = 0;
-            int opCount = 0;
-
-            numbersNew[nrCount++] = numbers[0];
-
-            for (int i = 0; i < ops.length; i++) {
-                char op = ops[i];
-                int right = numbers[i + 1];
-
-                if (op == '*' || op == '/') {
-                    int left = numbersNew[nrCount - 1];
-                    numbersNew[nrCount - 1] = (op == '*') ? (left * right) : (left / right);
-                } else {
-                    opsNew[opCount++] = op;
-                    numbersNew[nrCount++] = right;
-                }
-            }
-
-            result = numbersNew[0];
-            for (int i = 0; i < opCount; i++) {
-                result = (opsNew[i] == '+') ? (result + numbersNew[i + 1]) : (result - numbersNew[i + 1]);
-            }
-
-        } while (result < 0);
-
-        return new Generated(result, equation);
     }
 }
