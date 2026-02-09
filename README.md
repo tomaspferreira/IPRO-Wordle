@@ -3,8 +3,9 @@
 ## Description
 Wordle is a word game where the player has to guess a mystery word. The mystery word is predefined by the number of letters and how many there are, as well as how many guesses the player has to guess it. After each player guess, the game shows which letters coincide with the mystery word. If the letter is in the correct spot, it will turn green. If the a letter exists in the mystery word but it is in the wrong spot, it will turn yellow. Otherwise, it will be greyed out. The game ends when the player guesses the word or they run out of guesses.
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+## How to play
+At this point in developmet, unless IntelliJ is using Gradle or Maven, only Windows users are able to play the game as the JavaFX bin folder only includes the files for Windows.
+To start the game, just runthe run(Windows).bat file.
 
 ## Usage
 Self-made wordle is based on the popular online game by New York Times called "Wordle". In contrast to "Wordle" there are three other game modes Self-made Wordle includes, them being Verticle, Xordle and Nerdle. Links for the original games are all found below.
@@ -18,7 +19,9 @@ On any questions or suggestions, I am avaiable per mail:
 tomas.ferreira@students.fhnw.ch
 
 ## Roadmap
-A possible idea for the future is to make Self-made wordle a multiplayer game, meaning being able to play either with or against other players on two different devices.
+- Make it possible for Mac and Linux users to be able to play isn't yet possible. It will be possible in the fututre.
+- At the moment, the German word list only includes words with four and five letters. In the future, it will be possible to have six and seven letter words. 
+- A possible idea for the future is to make Self-made wordle a multiplayer game, meaning being able to play either with or against other players on two different devices.
 
 ## Authors and acknowledgment
 ### Game modes: 
