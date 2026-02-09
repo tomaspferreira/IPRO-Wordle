@@ -1,42 +1,98 @@
 public class WordleLogic {
 
-    public enum Tile { GREY, YELLOW, GREEN }
+    public enum Tile {
+        /** Incorrect letter. */
+        GREY,
+        /** Letter exists in the word but is in the wrong position. */
+        YELLOW,
+        /** Correct letter in the correct position. */
+        GREEN
+    }
 
     public static class TurnResult {
-        public final String guess;
-        public final Tile[][] tilesByWord; // [word][letters]
-        public final boolean[] solved;
-        public final int remainingGuesses;
-        public final boolean gameWon;
-        public final boolean gameOver;
 
-        TurnResult(String guess, Tile[][] tilesByWord, boolean[] solved,
-                   int remainingGuesses, boolean gameWon, boolean gameOver) {
-            this.guess = guess;
-            this.tilesByWord = tilesByWord;
-            this.solved = solved;
-            this.remainingGuesses = remainingGuesses;
-            this.gameWon = gameWon;
-            this.gameOver = gameOver;
+        /** Submitted guess (uppercase). */
+        private final String guess;
+
+        /** Tile feedback for each secret word [wordIndex][letterIndex]. */
+        private final Tile[][] tilesByWord;
+
+        /** Which secret words are solved after this turn. */
+        private final boolean[] solved;
+
+        /** Remaining guesses after this turn. */
+        private final int remainingGuesses;
+
+        /** Whether the game is won after this turn. */
+        private final boolean gameWon;
+
+        /** Whether the game is over after this turn. */
+        private final boolean gameOver;
+
+        TurnResult(
+                String guessValue,
+                Tile[][] tilesByWordValue,
+                boolean[] solvedValue,
+                int remainingGuessesValue,
+                boolean gameWonValue,
+                boolean gameOverValue
+        ) {
+            this.guess = guessValue;
+            this.tilesByWord = tilesByWordValue;
+            this.solved = solvedValue;
+            this.remainingGuesses = remainingGuessesValue;
+            this.gameWon = gameWonValue;
+            this.gameOver = gameOverValue;
+        }
+
+        public String getGuess() {
+            return guess;
+        }
+
+        public Tile[][] getTilesByWord() {
+            return tilesByWord;
+        }
+
+        public boolean[] getSolved() {
+            return solved;
+        }
+
+        public int getRemainingGuesses() {
+            return remainingGuesses;
+        }
+
+        public boolean isGameWon() {
+            return gameWon;
+        }
+
+        public boolean isGameOver() {
+            return gameOver;
         }
     }
 
+    /** Number of secret words to solve. */
     private final int wordsCount;
-    private final int letters;
-    private final Language lang;
 
+    /** Number of letters per word. */
+    private final int letters;
+
+    /** Secret words (uppercase). */
     private final String[] words;
+
+    /** Which secret words are solved. */
     private final boolean[] solved;
 
+    /** Total number of allowed guesses. */
     private final int chances;
+
+    /** Number of tries already used. */
     private int tries;
 
-    public WordleLogic(int wordsCount, int letters, Language lang) {
-        this.wordsCount = wordsCount;
-        this.letters = letters;
-        this.lang = lang;
+    public WordleLogic(int wordsCountValue, int lettersValue, Language langValue) {
+        this.wordsCount = wordsCountValue;
+        this.letters = lettersValue;
 
-        String[] list = lang.getWordList(letters);
+        String[] list = langValue.getWordList(letters);
         if (list.length < wordsCount) {
             throw new IllegalArgumentException("Not enough words for length " + letters);
         }
@@ -50,6 +106,7 @@ public class WordleLogic {
             do {
                 r = (int) (Math.random() * list.length);
             } while (used[r]);
+
             used[r] = true;
             words[i] = list[r].toUpperCase();
             solved[i] = false;
@@ -59,10 +116,13 @@ public class WordleLogic {
         this.tries = 0;
     }
 
-    public int getChances() { return chances; }
-    public int getTries() { return tries; }
-    public int getLetters() { return letters; }
-    public int getWordsCount() { return wordsCount; }
+    public int getChances() {
+        return chances;
+    }
+
+    public int getLetters() {
+        return letters;
+    }
 
     public String[] getWords() {
         String[] out = new String[words.length];
@@ -77,7 +137,11 @@ public class WordleLogic {
     }
 
     public boolean isGameWon() {
-        for (boolean b : solved) if (!b) return false;
+        for (boolean b : solved) {
+            if (!b) {
+                return false;
+            }
+        }
         return true;
     }
 
@@ -89,7 +153,9 @@ public class WordleLogic {
         if (isGameOver()) {
             Tile[][] empty = new Tile[wordsCount][letters];
             for (int w = 0; w < wordsCount; w++) {
-                for (int i = 0; i < letters; i++) empty[w][i] = Tile.GREY;
+                for (int i = 0; i < letters; i++) {
+                    empty[w][i] = Tile.GREY;
+                }
             }
             return new TurnResult("", empty, getSolved(), 0, isGameWon(), true);
         }
@@ -108,18 +174,22 @@ public class WordleLogic {
                 solved[w] = true;
             }
 
-            // score, even if solved this turn (so UI can paint)
             int[] status = scoreWordle(words[w], guess);
 
             for (int i = 0; i < letters; i++) {
-                if (status[i] == 2) tilesByWord[w][i] = Tile.GREEN;
-                else if (status[i] == 1) tilesByWord[w][i] = Tile.YELLOW;
-                else tilesByWord[w][i] = Tile.GREY;
+                if (status[i] == 2) {
+                    tilesByWord[w][i] = Tile.GREEN;
+                } else if (status[i] == 1) {
+                    tilesByWord[w][i] = Tile.YELLOW;
+                } else {
+                    tilesByWord[w][i] = Tile.GREY;
+                }
             }
 
-            // if solved after this turn -> force all green for that row
             if (solved[w]) {
-                for (int i = 0; i < letters; i++) tilesByWord[w][i] = Tile.GREEN;
+                for (int i = 0; i < letters; i++) {
+                    tilesByWord[w][i] = Tile.GREEN;
+                }
             }
         }
 
@@ -136,7 +206,6 @@ public class WordleLogic {
         );
     }
 
-    // duplicate-safe
     private static int[] scoreWordle(String word, String guess) {
         int n = word.length();
         int[] status = new int[n];
@@ -152,7 +221,10 @@ public class WordleLogic {
         }
 
         for (int i = 0; i < n; i++) {
-            if (green[i]) continue;
+            if (green[i]) {
+                continue;
+            }
+
             char c = guess.charAt(i);
             for (int j = 0; j < n; j++) {
                 if (remaining[j] == c) {

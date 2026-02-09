@@ -39,7 +39,7 @@ public class StartMenu extends VBox {
         continueBtn.setStyle("-fx-font-size: 24px; -fx-font-weight: bold;");
         VBox.setMargin(continueBtn, new Insets(50, 0, 0, 0));
 
-        continueBtn.setOnAction(e -> {
+        continueBtn.setOnAction(_ -> {
             String language = langBox.getValue();
             String mode = modeBox.getValue();
 

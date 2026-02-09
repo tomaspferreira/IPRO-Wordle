@@ -1,36 +1,96 @@
 public class VerticleLogic {
 
-    public enum Tile { GREY, YELLOW, GREEN }
+    public enum Tile {
+        /** Incorrect letter. */
+        GREY,
+        /** Letter exists in the word but not in this position. */
+        YELLOW,
+        /** Correct letter in the correct position. */
+        GREEN
+    }
 
     public static class TurnResult {
-        public final String guess;          // uppercase
-        public final Tile[] tiles;          // length = letters (one tile per row)
-        public final int tryIndex;          // which column was filled
-        public final int remainingGuesses;
-        public final boolean gameWon;
-        public final boolean gameOver;
 
-        TurnResult(String guess, Tile[] tiles, int tryIndex, int remainingGuesses, boolean gameWon, boolean gameOver) {
-            this.guess = guess;
-            this.tiles = tiles;
-            this.tryIndex = tryIndex;
-            this.remainingGuesses = remainingGuesses;
-            this.gameWon = gameWon;
-            this.gameOver = gameOver;
+        /** Submitted guess (uppercase). */
+        private final String guess;
+
+        /** Tile feedback for each row. */
+        private final Tile[] tiles;
+
+        /** Index of the filled column (try index). */
+        private final int tryIndex;
+
+        /** Remaining guesses after this turn. */
+        private final int remainingGuesses;
+
+        /** Whether the game was won on this turn. */
+        private final boolean gameWon;
+
+        /** Whether the game is over after this turn. */
+        private final boolean gameOver;
+
+        TurnResult(
+                String guessValue,
+                Tile[] tilesValue,
+                int tryIndexValue,
+                int remainingGuessesValue,
+                boolean gameWonValue,
+                boolean gameOverValue
+        ) {
+            this.guess = guessValue;
+            this.tiles = tilesValue;
+            this.tryIndex = tryIndexValue;
+            this.remainingGuesses = remainingGuessesValue;
+            this.gameWon = gameWonValue;
+            this.gameOver = gameOverValue;
+        }
+
+        public String getGuess() {
+            return guess;
+        }
+
+        public Tile[] getTiles() {
+            return tiles;
+        }
+
+        public int getTryIndex() {
+            return tryIndex;
+        }
+
+        public int getRemainingGuesses() {
+            return remainingGuesses;
+        }
+
+        public boolean isGameWon() {
+            return gameWon;
+        }
+
+        public boolean isGameOver() {
+            return gameOver;
         }
     }
 
+    /** Number of letters in the secret word. */
     private final int letters;
+
+    /** Language provider used to fetch word lists. */
     private final Language lang;
 
-    private final String word;     // uppercase
-    private final int chances;     // = letters
+    /** Secret word (uppercase). */
+    private final String word;
+
+    /** Total number of chances (equals {@link #letters}). */
+    private final int chances;
+
+    /** Number of tries used so far. */
     private int tries = 0;
+
+    /** Whether the game has been solved. */
     private boolean solved = false;
 
-    public VerticleLogic(int letters, Language lang) {
-        this.letters = letters;
-        this.lang = lang;
+    public VerticleLogic(int lettersValue, Language langValue) {
+        this.letters = lettersValue;
+        this.lang = langValue;
 
         String[] list = lang.getWordList(letters);
         if (list == null || list.length == 0) {
@@ -42,18 +102,36 @@ public class VerticleLogic {
         this.chances = letters;
     }
 
-    public int getLetters() { return letters; }
-    public int getChances() { return chances; }
-    public int getTries() { return tries; }
-    public String getWord() { return word; }
+    public int getLetters() {
+        return letters;
+    }
 
-    public boolean isGameWon() { return solved; }
-    public boolean isGameOver() { return solved || tries >= chances; }
+    public int getChances() {
+        return chances;
+    }
+
+    public int getTries() {
+        return tries;
+    }
+
+    public String getWord() {
+        return word;
+    }
+
+    public boolean isGameWon() {
+        return solved;
+    }
+
+    public boolean isGameOver() {
+        return solved || tries >= chances;
+    }
 
     public TurnResult submitGuess(String guessRaw) {
         if (isGameOver()) {
             Tile[] empty = new Tile[letters];
-            for (int i = 0; i < letters; i++) empty[i] = Tile.GREY;
+            for (int i = 0; i < letters; i++) {
+                empty[i] = Tile.GREY;
+            }
             return new TurnResult("", empty, tries, 0, isGameWon(), true);
         }
 
@@ -63,14 +141,16 @@ public class VerticleLogic {
             throw new IllegalArgumentException("Guess must be " + letters + " letters.");
         }
 
-        int thisTry = tries; // column index we are about to fill
+        int thisTry = tries;
         tries++;
 
-        // If guessed full word -> whole column GREEN
         if (guess.equals(word)) {
             solved = true;
+
             Tile[] allGreen = new Tile[letters];
-            for (int r = 0; r < letters; r++) allGreen[r] = Tile.GREEN;
+            for (int r = 0; r < letters; r++) {
+                allGreen[r] = Tile.GREEN;
+            }
 
             return new TurnResult(
                     guess,
@@ -82,19 +162,15 @@ public class VerticleLogic {
             );
         }
 
-        // Target letter for THIS column
         char target = word.charAt(thisTry);
 
-        // Duplicate-safe consuming
         char[] remaining = word.toCharArray();
-        int[] status = new int[letters]; // 0 grey, 1 yellow, 2 green
+        int[] status = new int[letters];
 
-        // PASS 1: exactly ONE GREEN if possible (letter equals target)
         boolean greenUsed = false;
         for (int r = 0; r < letters; r++) {
             char c = guess.charAt(r);
             if (!greenUsed && c == target) {
-                // consume ONE occurrence of that char from remaining
                 for (int j = 0; j < letters; j++) {
                     if (remaining[j] == c) {
                         remaining[j] = 0;
@@ -106,9 +182,11 @@ public class VerticleLogic {
             }
         }
 
-        // PASS 2: YELLOWS from remaining
         for (int r = 0; r < letters; r++) {
-            if (status[r] == 2) continue;
+            if (status[r] == 2) {
+                continue;
+            }
+
             char c = guess.charAt(r);
 
             boolean found = false;
@@ -120,12 +198,22 @@ public class VerticleLogic {
                 }
             }
 
-            status[r] = found ? 1 : 0;
+            if (found) {
+                status[r] = 1;
+            } else {
+                status[r] = 0;
+            }
         }
 
         Tile[] out = new Tile[letters];
         for (int r = 0; r < letters; r++) {
-            out[r] = (status[r] == 2) ? Tile.GREEN : (status[r] == 1 ? Tile.YELLOW : Tile.GREY);
+            if (status[r] == 2) {
+                out[r] = Tile.GREEN;
+            } else if (status[r] == 1) {
+                out[r] = Tile.YELLOW;
+            } else {
+                out[r] = Tile.GREY;
+            }
         }
 
         boolean over = isGameOver();

@@ -69,14 +69,14 @@ public class Settings extends VBox {
         backBtn.setPrefWidth(150);
         backBtn.setPrefHeight(60);
         backBtn.setStyle("-fx-font-size: 20px; -fx-font-weight: bold;");
-        backBtn.setOnAction(e -> nav.goToStartMenu());
+        backBtn.setOnAction(_ -> nav.goToStartMenu());
 
         HBox buttons = new HBox(20, backBtn, playBtn);
         buttons.setAlignment(Pos.CENTER);
         VBox.setMargin(buttons, new Insets(50, 0, 0, 0));
 
         // --- Play handler ---
-        playBtn.setOnAction(e -> {
+        playBtn.setOnAction(_ -> {
             if (mode.equals("Wordle")) {
                 int lettersChosen = lettersBox.getValue();
                 int wordsChosen = wordsBox.getValue();

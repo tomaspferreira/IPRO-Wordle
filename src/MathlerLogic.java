@@ -1,43 +1,93 @@
+import java.util.Arrays;
+
+
 public class MathlerLogic {
 
-    public enum Tile { GREY, YELLOW, GREEN }
+    public enum Tile {
+        /** Incorrect character. */
+        GREY,
+        /** Character exists but is in the wrong position. */
+        YELLOW,
+        /** Correct character in the correct position. */
+        GREEN
+    }
 
     public static class TurnResult {
-        public final String guess;
-        public final Tile[] tiles;
-        public final int remainingGuesses;
-        public final boolean gameWon;
-        public final boolean gameOver;
 
-        TurnResult(String guess, Tile[] tiles, int remainingGuesses, boolean gameWon, boolean gameOver) {
-            this.guess = guess;
-            this.tiles = tiles;
-            this.remainingGuesses = remainingGuesses;
-            this.gameWon = gameWon;
-            this.gameOver = gameOver;
+        /** The submitted guess after trimming. */
+        private final String guess;
+
+        /** Tile feedback for each position in the guess. */
+        private final Tile[] tiles;
+
+        /** Remaining guesses after this turn. */
+        private final int remainingGuesses;
+
+        /** Whether the game was won on this turn. */
+        private final boolean gameWon;
+
+        /** Whether the game is over after this turn. */
+        private final boolean gameOver;
+
+        TurnResult(
+                String guessValue,
+                Tile[] tilesValue,
+                int remainingGuessesValue,
+                boolean gameWonValue,
+                boolean gameOverValue
+        ) {
+            this.guess = guessValue;
+            this.tiles = tilesValue;
+            this.remainingGuesses = remainingGuessesValue;
+            this.gameWon = gameWonValue;
+            this.gameOver = gameOverValue;
+        }
+
+        public String getGuess() {
+            return guess;
+        }
+
+        public Tile[] getTiles() {
+            return tiles;
+        }
+
+        public int getRemainingGuesses() {
+            return remainingGuesses;
+        }
+
+        public boolean isGameWon() {
+            return gameWon;
+        }
+
+        public boolean isGameOver() {
+            return gameOver;
         }
     }
 
-    private final int numbersCount;
-
+    /** Target value of the secret expression. */
     private final int target;
-    private final String equation;   // secret equation
+
+    /** Secret equation/expression as a string. */
+    private final String equation;
+
+    /** Total number of allowed attempts. */
     private final int chances;
 
+    /** Number of tries already used. */
     private int tries = 0;
+
+    /** Whether the equation has been solved. */
     private boolean solved = false;
 
-    public MathlerLogic(int numbersCount) {
-        this.numbersCount = numbersCount;
+    public MathlerLogic(int numbersCountValue) {
 
-        // generate equation + target like your console code
         char[] operators = {'+', '-', '*', '/'};
         int result;
         String eq;
 
         do {
-            int[] numbers = new int[numbersCount];
-            char[] ops = new char[numbersCount - 1];
+            int[] numbers = new int[numbersCountValue];
+            char[] ops = new char[numbersCountValue - 1];
 
             numbers[0] = 1 + (int) (Math.random() * 99);
 
@@ -57,10 +107,20 @@ public class MathlerLogic {
                 } else {
                     int[] divisors = new int[20];
                     int count = 0;
+
                     for (int d = 2; d <= 20; d++) {
-                        if (running % d == 0) divisors[count++] = d;
+                        if (running % d == 0) {
+                            divisors[count++] = d;
+                        }
                     }
-                    int divisor = (count == 0) ? 1 : divisors[(int) (Math.random() * count)];
+
+                    int divisor;
+                    if (count == 0) {
+                        divisor = 1;
+                    } else {
+                        divisor = divisors[(int) (Math.random() * count)];
+                    }
+
                     numbers[i + 1] = divisor;
                     running /= divisor;
                 }
@@ -69,11 +129,12 @@ public class MathlerLogic {
             StringBuilder sb = new StringBuilder();
             for (int i = 0; i < numbers.length; i++) {
                 sb.append(numbers[i]);
-                if (i < ops.length) sb.append(ops[i]);
+                if (i < ops.length) {
+                    sb.append(ops[i]);
+                }
             }
             eq = sb.toString();
 
-            // evaluate with precedence (same as your console version)
             int[] numbersNew = new int[numbers.length];
             char[] opsNew = new char[ops.length];
 
@@ -88,7 +149,11 @@ public class MathlerLogic {
 
                 if (op == '*' || op == '/') {
                     int left = numbersNew[nrCount - 1];
-                    numbersNew[nrCount - 1] = (op == '*') ? (left * right) : (left / right);
+                    if (op == '*') {
+                        numbersNew[nrCount - 1] = left * right;
+                    } else {
+                        numbersNew[nrCount - 1] = left / right;
+                    }
                 } else {
                     opsNew[oCount++] = op;
                     numbersNew[nrCount++] = right;
@@ -97,8 +162,11 @@ public class MathlerLogic {
 
             result = numbersNew[0];
             for (int i = 0; i < oCount; i++) {
-                if (opsNew[i] == '+') result += numbersNew[i + 1];
-                else result -= numbersNew[i + 1];
+                if (opsNew[i] == '+') {
+                    result += numbersNew[i + 1];
+                } else {
+                    result -= numbersNew[i + 1];
+                }
             }
 
         } while (result < 0);
@@ -108,49 +176,79 @@ public class MathlerLogic {
         this.chances = equation.length() + 2;
     }
 
-    public int getTarget() { return target; }
-    public String getEquation() { return equation; }
-    public int getChances() { return chances; }
-    public int getTries() { return tries; }
-    public int getEquationLength() { return equation.length(); }
+    public int getTarget() {
+        return target;
+    }
 
-    public boolean isGameWon() { return solved; }
-    public boolean isGameOver() { return solved || tries >= chances; }
+    public String getEquation() {
+        return equation;
+    }
+
+    public int getChances() {
+        return chances;
+    }
+
+    public int getEquationLength() {
+        return equation.length();
+    }
+
+    public boolean isGameWon() {
+        return solved;
+    }
+
+    public boolean isGameOver() {
+        return solved || tries >= chances;
+    }
 
     public TurnResult submitGuess(String guessRaw) {
         if (isGameOver()) {
             Tile[] empty = new Tile[equation.length()];
-            for (int i = 0; i < empty.length; i++) empty[i] = Tile.GREY;
+            Arrays.fill(empty, Tile.GREY);
             return new TurnResult("", empty, 0, isGameWon(), true);
         }
 
         String guess = guessRaw.trim();
 
         if (guess.length() != equation.length()) {
-            throw new IllegalArgumentException("Your guess must be " + equation.length() + " characters long.");
+            throw new IllegalArgumentException(
+                    "Your guess must be " + equation.length() + " characters long."
+            );
         }
 
-        // Basic allowed chars check (digits and + - * /)
         for (int i = 0; i < guess.length(); i++) {
             char ch = guess.charAt(i);
-            boolean ok = (ch >= '0' && ch <= '9') || ch == '+' || ch == '-' || ch == '*' || ch == '/';
-            if (!ok) throw new IllegalArgumentException("Only digits and + - * / allowed.");
+            boolean ok = (ch >= '0' && ch <= '9')
+                    || ch == '+'
+                    || ch == '-'
+                    || ch == '*'
+                    || ch == '/';
+            if (!ok) {
+                throw new IllegalArgumentException("Only digits and + - * / allowed.");
+            }
         }
 
         tries++;
 
         if (guess.equals(equation)) {
             solved = true;
+
             Tile[] allGreen = new Tile[equation.length()];
-            for (int i = 0; i < allGreen.length; i++) allGreen[i] = Tile.GREEN;
-            return new TurnResult(guess, allGreen, Math.max(0, chances - tries), true, true);
+            Arrays.fill(allGreen, Tile.GREEN);
+
+
+            return new TurnResult(
+                    guess,
+                    allGreen,
+                    Math.max(0, chances - tries),
+                    true,
+                    true
+            );
         }
 
         char[] remaining = equation.toCharArray();
         boolean[] green = new boolean[equation.length()];
         Tile[] out = new Tile[equation.length()];
 
-        // pass 1 greens
         for (int i = 0; i < equation.length(); i++) {
             if (guess.charAt(i) == equation.charAt(i)) {
                 green[i] = true;
@@ -159,9 +257,10 @@ public class MathlerLogic {
             }
         }
 
-        // pass 2 yellows/greys
         for (int i = 0; i < equation.length(); i++) {
-            if (green[i]) continue;
+            if (green[i]) {
+                continue;
+            }
 
             char c = guess.charAt(i);
             boolean found = false;
@@ -174,7 +273,11 @@ public class MathlerLogic {
                 }
             }
 
-            out[i] = found ? Tile.YELLOW : Tile.GREY;
+            if (found) {
+                out[i] = Tile.YELLOW;
+            } else {
+                out[i] = Tile.GREY;
+            }
         }
 
         boolean over = isGameOver();

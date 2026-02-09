@@ -1,6 +1,6 @@
 public class Gamemode {
-    private String game;
-    private Language lang;
+    private final String game;
+    private final Language lang;
 
     Gamemode(String gameMode, Language language) {
         this.game = gameMode;

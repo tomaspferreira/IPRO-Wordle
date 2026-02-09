@@ -11,31 +11,35 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 public class WordleView extends BorderPane {
 
-    // ---------- Tile Cell (hint behind + main on top) ----------
+    /**
+     * Single tile cell with a hint label behind and a main label on top.
+     */
     private static class Cell extends StackPane {
+
+        /**
+         * Hint label shown faintly behind the main letter.
+         */
         private final Label hint = new Label("");
+
+        /**
+         * Main label for the typed/painted letter.
+         */
         private final Label main = new Label("");
 
         Cell() {
-            setMinSize(45, 45);
-            setPrefSize(45, 45);
-            setMaxSize(45, 45);
+            setMinSize(GameStyles.TILE_SIZE, GameStyles.TILE_SIZE);
+            setPrefSize(GameStyles.TILE_SIZE, GameStyles.TILE_SIZE);
+            setMaxSize(GameStyles.TILE_SIZE, GameStyles.TILE_SIZE);
 
-            // Tile border/background belongs to the StackPane
             setStyle(baseTileStyle() + emptyBgStyle());
 
-            // Hint behind (bigger, grey, overwritable)
-            hint.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: rgba(0,0,0,0.25);");
-
-            // Main on top (IMPORTANT: dark text on empty tiles)
-            main.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #111;");
+            hint.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: rgba(0,0,0,0.25);");
+            main.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #111;");
 
             getChildren().addAll(hint, main);
             StackPane.setAlignment(hint, Pos.CENTER);
@@ -63,11 +67,11 @@ public class WordleView extends BorderPane {
         }
 
         void setMainColorBlack() {
-            main.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #111;");
+            main.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #111;");
         }
 
         void setMainColorWhite() {
-            main.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: white;");
+            main.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: white;");
         }
 
         void setTileBgEmpty() {
@@ -99,53 +103,123 @@ public class WordleView extends BorderPane {
         }
     }
 
-    // ---------- View State ----------
+    /**
+     * Navigator used to switch screens.
+     */
     private final Navigator nav;
+
+    /**
+     * Current language code.
+     */
     private final String language;
 
+    /**
+     * Game logic instance.
+     */
     private final WordleLogic game;
+
+    /** Back button (shown after game ends). */
+    private final Button backBtn;
+
+    /** Give up button. */
+    private final Button giveUpBtn;
+
+
+    /**
+     * Letters per word.
+     */
     private final int letters;
+
+    /**
+     * Number of words to solve.
+     */
     private final int wordsCount;
+
+    /**
+     * Number of allowed guesses.
+     */
     private final int chances;
 
-    // typing buffer (one guess shared across all boards)
+    /**
+     * Current guess row index.
+     */
     private int rowIndex = 0;
+
+    /**
+     * Current column index (letters typed in this row).
+     */
     private int colIndex = 0;
+
+    /**
+     * Current typed letters for this guess.
+     */
     private final char[] current;
 
+    /**
+     * Message label for errors/status.
+     */
     private final Label message = new Label("");
+
+    /**
+     * Remaining guesses label.
+     */
     private final Label remaining;
 
-    // Boards: cells[w][row][col] and rowBoxes[w][row]
+    /**
+     * Cells indexed by [word][row][col].
+     */
     private final Cell[][][] cells;
+
+    /**
+     * Row boxes indexed by [word][row].
+     */
     private final HBox[][] rowBoxes;
+
+    /**
+     * SOLVED labels per word.
+     */
     private final Label[] solvedLabels;
 
-    // freeze solved boards
+    /**
+     * Track which words were solved before (so we stop painting/typing them).
+     */
     private final boolean[] solvedBefore;
 
-    // For hint system: known greens per word/pos (0 = unknown)
+    /**
+     * Known green letters to show as hints per word.
+     */
     private final char[][] knownGreens;
 
-    // Keyboard UI
-    private final Map<Character, Button> keyButtons = new HashMap<>();
+    /**
+     * Set of used letters (A-Z only) for keyboard greying logic.
+     */
     private final Set<Character> usedLetters = new HashSet<>();
 
-    public WordleView(Navigator nav, String language, int letters, int wordsCount) {
-        this.nav = nav;
-        this.language = language;
+    /**
+     * Keyboard coloring manager (keys registered by KeyboardPane).
+     */
+    private final KeyboardColorManager keyboardColors = new KeyboardColorManager();
+
+    /**
+     * Whether UI input is locked (game ended / gave up).
+     */
+    private boolean uiLocked = false;
+
+    public WordleView(Navigator navigator, String languageValue, int lettersValue, int wordsCountValue) {
+        this.nav = navigator;
+        this.language = languageValue;
 
         Language lang = new Language(language);
-        this.game = new WordleLogic(wordsCount, letters, lang);
+        this.game = new WordleLogic(wordsCountValue, lettersValue, lang);
 
-        this.letters = letters;
-        this.wordsCount = wordsCount;
+        this.letters = lettersValue;
+        this.wordsCount = wordsCountValue;
         this.chances = game.getChances();
         this.current = new char[letters];
 
         this.remaining = new Label("Guesses left: " + chances);
-        remaining.setStyle("-fx-font-size: 16px;");
-        message.setStyle("-fx-text-fill: red; -fx-font-size: 16px;");
+        remaining.setStyle(GameStyles.INFO);
+        message.setStyle(GameStyles.MSG_RED);
 
         this.cells = new Cell[wordsCount][chances][letters];
         this.rowBoxes = new HBox[wordsCount][chances];
@@ -153,14 +227,12 @@ public class WordleView extends BorderPane {
         this.solvedBefore = new boolean[wordsCount];
         this.knownGreens = new char[wordsCount][letters];
 
-        // ---------- TOP ----------
         Label title = new Label("Wordle");
-        title.setStyle("-fx-font-size: 48px; -fx-font-weight: bold;");
+        title.setStyle(GameStyles.TITLE);
         BorderPane.setAlignment(title, Pos.CENTER);
         BorderPane.setMargin(title, new Insets(20, 0, 10, 0));
         setTop(title);
 
-        // ---------- CENTER: Boards (wrapping + scroll) ----------
         FlowPane boardsPane = new FlowPane();
         boardsPane.setHgap(25);
         boardsPane.setVgap(25);
@@ -187,7 +259,7 @@ public class WordleView extends BorderPane {
             board.getChildren().addAll(header, solvedLabel);
 
             for (int r = 0; r < chances; r++) {
-                HBox rowBox = new HBox(6);
+                HBox rowBox = new HBox(8);
                 rowBox.setAlignment(Pos.CENTER);
 
                 for (int c = 0; c < letters; c++) {
@@ -196,11 +268,11 @@ public class WordleView extends BorderPane {
                     rowBox.getChildren().add(cell);
                 }
 
-                // show only first row initially
                 if (r > 0) {
                     rowBox.setVisible(false);
                     rowBox.setManaged(false);
                 }
+
                 rowBoxes[w][r] = rowBox;
                 board.getChildren().add(rowBox);
             }
@@ -210,27 +282,24 @@ public class WordleView extends BorderPane {
 
         setCenter(boardsScroll);
 
-        // ---------- BOTTOM: Back + Give up + (small) keyboard ----------
-        Button backBtn = new Button("Back");
+        this.backBtn = new Button("Back");
         backBtn.setPrefWidth(140);
         backBtn.setPrefHeight(44);
-        backBtn.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
+        backBtn.setStyle(GameStyles.bigButton());
+        backBtn.setFocusTraversable(false);
         backBtn.setVisible(false);
         backBtn.setManaged(false);
-        backBtn.setOnAction(e -> nav.goToSettings(language, "Wordle"));
+        backBtn.setOnAction(_ -> nav.goToSettings(language, "Wordle"));
 
-        Button giveUpBtn = new Button("Give up");
+        this.giveUpBtn = new Button("Give up");
         giveUpBtn.setPrefWidth(160);
         giveUpBtn.setPrefHeight(44);
-        giveUpBtn.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
+        giveUpBtn.setStyle(GameStyles.bigButton());
+        giveUpBtn.setFocusTraversable(false);
 
-        VBox keyboard = buildKeyboard(
-                () -> submit(),
-                () -> backspace(),
-                ch -> typeChar(ch)
-        );
 
-        // Put "Give up" UNDER keyboard (like you wanted)
+        KeyboardPane keyboard = buildLetterKeyboard();
+
         HBox topActions = new HBox(12, backBtn);
         topActions.setAlignment(Pos.CENTER);
 
@@ -242,32 +311,18 @@ public class WordleView extends BorderPane {
         bottom.setPadding(new Insets(14));
         setBottom(bottom);
 
-        // Losing screen content (keeps bottom visible)
-        VBox losingContent = new VBox(10);
-        losingContent.setAlignment(Pos.CENTER);
-        losingContent.setPadding(new Insets(20));
+        giveUpBtn.setOnAction(_ -> showStandardLoseWordle("You gave up."));
 
-        ScrollPane losingScroll = new ScrollPane(losingContent);
-        losingScroll.setFitToWidth(true);
-        losingScroll.setPannable(true);
-        losingScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        losingScroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
-
-        Label won = new Label("You win!");
-        won.setStyle("-fx-font-size: 48px; -fx-font-weight: bold;");
-
-        // Give up action
-        giveUpBtn.setOnAction(e -> {
-            showLosing(losingContent);
-            setCenter(losingScroll);
-            message.setText("You gave up.");
-            endGameUI(backBtn, giveUpBtn);
-        });
-
-        // Physical keyboard support too
         setFocusTraversable(true);
+        setOnMousePressed(_ -> requestFocus());
+
         setOnKeyPressed(e -> {
-            if (game.isGameOver()) return;
+            if (uiLocked) {
+                return;
+            }
+            if (game.isGameOver()) {
+                return;
+            }
 
             if (e.getCode() == KeyCode.ENTER) {
                 submit();
@@ -287,7 +342,6 @@ public class WordleView extends BorderPane {
             }
         });
 
-        // Ensure first row is laid out and focus works immediately
         Platform.runLater(() -> {
             applyCss();
             layout();
@@ -295,153 +349,207 @@ public class WordleView extends BorderPane {
             refreshHintsForTypingRow();
         });
 
-        // ----- local helper (win) -----
-        Runnable showWin = () -> {
-            setCenter(won);
-            message.setStyle("-fx-text-fill: green; -fx-font-size: 16px;");
-            message.setText("You solved all words!");
-            endGameUI(backBtn, giveUpBtn);
-        };
-
-        // Store for submit() use
-        this.onWin = showWin;
-        this.onLose = () -> {
-            showLosing(losingContent);
-            setCenter(losingScroll);
-            message.setStyle("-fx-text-fill: red; -fx-font-size: 16px;");
-            message.setText("Out of guesses.");
-            endGameUI(backBtn, giveUpBtn);
-        };
     }
 
-    // ---------- Endgame callbacks ----------
-    private Runnable onWin;
-    private Runnable onLose;
-
-    // ---------- Submit Logic ----------
+    // ---------- Submit ----------
     private void submit() {
-        if (game.isGameOver()) {
-            message.setText("Game over.");
+        if (uiLocked) {
             return;
         }
-        if (rowIndex >= chances) {
-            message.setText("No guesses left.");
-            return;
-        }
-        if (colIndex < letters) {
-            message.setText("Not enough letters.");
+
+        if (!canSubmit()) {
             return;
         }
 
         String guessRaw = new String(current);
 
+        if (!isValidGuessWord(guessRaw)) {
+            return;
+        }
+
+        addUsedLetters(guessRaw);
+
+        WordleLogic.TurnResult result = submitToLogic(guessRaw);
+        if (result == null) {
+            return;
+        }
+
+        applyTurnResult(result);
+
+        remaining.setText("Guesses left: " + result.getRemainingGuesses());
+
+        updateKeyboardGreying();
+
+        if (handleEndIfNeeded(result)) {
+            return;
+        }
+
+        advanceToNextRow();
+    }
+
+
+    private boolean canSubmit() {
+        if (game.isGameOver()) {
+            message.setText("Game over.");
+            return false;
+        }
+        if (rowIndex >= chances) {
+            message.setText("No guesses left.");
+            return false;
+        }
+        if (colIndex < letters) {
+            message.setText("Not enough letters.");
+            return false;
+        }
+        return true;
+    }
+
+    private boolean isValidGuessWord(String guessRaw) {
         if (!HunspellChecker.isValidWord(guessRaw)) {
             message.setText("Not a valid word.");
-            return;
+            return false;
         }
+        return true;
+    }
 
-        // mark letters as "used" for keyboard coloring rule
+    private void addUsedLetters(String guessRaw) {
         for (int i = 0; i < guessRaw.length(); i++) {
             char ch = Character.toUpperCase(guessRaw.charAt(i));
-            if (ch >= 'A' && ch <= 'Z') usedLetters.add(ch);
+            if (ch >= 'A' && ch <= 'Z') {
+                usedLetters.add(ch);
+            }
         }
+    }
 
-        WordleLogic.TurnResult r;
+    private WordleLogic.TurnResult submitToLogic(String guessRaw) {
         try {
-            r = game.submitGuess(guessRaw);
+            return game.submitGuess(guessRaw);
         } catch (IllegalArgumentException ex) {
             message.setText(ex.getMessage());
-            return;
+            return null;
         }
+    }
 
-        int paintedRow = game.getTries() - 1;
+    private void applyTurnResult(WordleLogic.TurnResult result) {
+        int paintedRow = rowIndex;
 
-        // Paint each board row if not frozen
+        String guess = result.getGuess();
+        WordleLogic.Tile[][] tilesByWord = result.getTilesByWord();
+        boolean[] solvedNowArr = result.getSolved();
+
         for (int w = 0; w < wordsCount; w++) {
-            if (solvedBefore[w]) continue;
+            if (solvedBefore[w]) {
+                continue;
+            }
 
-            // update known greens for hint system + paint
-            boolean solvedNow = r.solved[w];
+            boolean solvedNow = solvedNowArr[w];
             if (solvedNow) {
                 solvedLabels[w].setText("SOLVED!");
                 solvedBefore[w] = true;
             }
 
-            for (int c = 0; c < letters; c++) {
-                Cell cell = cells[w][paintedRow][c];
-                char ch = r.guess.charAt(c);
+            paintBoardRow(w, paintedRow, guess, tilesByWord, solvedNow);
+        }
+    }
 
-                cell.clearHint();
-                cell.setMain(ch);
+    private void paintBoardRow(
+            int wordIndex,
+            int paintedRow,
+            String guess,
+            WordleLogic.Tile[][] tilesByWord,
+            boolean solvedNow
+    ) {
+        for (int c = 0; c < letters; c++) {
+            Cell cell = cells[wordIndex][paintedRow][c];
+            char ch = guess.charAt(c);
 
-                WordleLogic.Tile tile = r.tilesByWord[w][c];
+            cell.clearHint();
+            cell.setMain(ch);
 
-                if (solvedNow) {
-                    // solved word row: force all green
-                    cell.setTileBgGreen();
-                    knownGreens[w][c] = ch;
-                } else {
-                    if (tile == WordleLogic.Tile.GREEN) {
-                        cell.setTileBgGreen();
-                        knownGreens[w][c] = ch;
-                    } else if (tile == WordleLogic.Tile.YELLOW) {
-                        cell.setTileBgYellow();
-                    } else {
-                        cell.setTileBgGrey();
-                    }
-                }
+            WordleLogic.Tile tile = tilesByWord[wordIndex][c];
+
+            if (solvedNow) {
+                cell.setTileBgGreen();
+                knownGreens[wordIndex][c] = ch;
+            } else if (tile == WordleLogic.Tile.GREEN) {
+                cell.setTileBgGreen();
+                knownGreens[wordIndex][c] = ch;
+            } else if (tile == WordleLogic.Tile.YELLOW) {
+                cell.setTileBgYellow();
+            } else {
+                cell.setTileBgGrey();
             }
         }
+    }
 
-        remaining.setText("Guesses left: " + r.remainingGuesses);
-
-        // Update keyboard greying rule (only if used letters)
-        updateKeyboardGreying();
-
-        if (r.gameWon) {
-            onWin.run();
-            return;
+    private boolean handleEndIfNeeded(WordleLogic.TurnResult result) {
+        if (result.isGameWon()) {
+            showStandardWinWordle();
+            return true;
         }
-        if (r.gameOver) {
-            onLose.run();
-            return;
+        if (result.isGameOver()) {
+            showStandardLoseWordle("Out of guesses.");
+            return true;
         }
+        return false;
+    }
 
-        // Reveal next row only for unsolved boards
-        int nextRow = paintedRow + 1;
+
+
+
+    private void advanceToNextRow() {
+        int nextRow = rowIndex + 1;
         if (nextRow < chances) {
-            for (int w = 0; w < wordsCount; w++) {
-                if (!solvedBefore[w]) {
-                    rowBoxes[w][nextRow].setManaged(true);
-                    rowBoxes[w][nextRow].setVisible(true);
-                }
-            }
+            revealNextRow(nextRow);
         }
 
-        // move to next row typing
         rowIndex++;
         colIndex = 0;
-        for (int i = 0; i < letters; i++) current[i] = 0;
+        for (int i = 0; i < letters; i++) {
+            current[i] = 0;
+        }
 
         message.setText("");
         refreshHintsForTypingRow();
         requestFocus();
     }
 
-    // ---------- Typing into current row ----------
-    private void typeChar(char ch) {
-        if (game.isGameOver()) return;
-        if (rowIndex >= chances) return;
-        if (colIndex >= letters) return;
-
-        current[colIndex] = ch;
-
-        // Write main text to ALL unsolved boards in typing row
+    private void revealNextRow(int nextRow) {
         for (int w = 0; w < wordsCount; w++) {
-            if (solvedBefore[w]) continue;
+            if (!solvedBefore[w]) {
+                rowBoxes[w][nextRow].setManaged(true);
+                rowBoxes[w][nextRow].setVisible(true);
+            }
+        }
+    }
+
+    private void typeChar(char ch) {
+        if (uiLocked) {
+            return;
+        }
+        if (game.isGameOver()) {
+            return;
+        }
+        if (rowIndex >= chances) {
+            return;
+        }
+        if (colIndex >= letters) {
+            return;
+        }
+
+        char upper = Character.toUpperCase(ch);
+        if (upper < 'A' || upper > 'Z') {
+            return;
+        }
+
+        current[colIndex] = upper;
+
+        for (int w = 0; w < wordsCount; w++) {
+            if (solvedBefore[w]) {
+                continue;
+            }
             Cell cell = cells[w][rowIndex][colIndex];
-            cell.setMain(ch);
-            // keep empty bg while typing
+            cell.setMain(upper);
             cell.setTileBgEmpty();
         }
 
@@ -449,16 +557,29 @@ public class WordleView extends BorderPane {
         refreshHintsForTypingRow();
     }
 
+
+
     private void backspace() {
-        if (game.isGameOver()) return;
-        if (rowIndex >= chances) return;
-        if (colIndex <= 0) return;
+        if (uiLocked) {
+            return;
+        }
+        if (game.isGameOver()) {
+            return;
+        }
+        if (rowIndex >= chances) {
+            return;
+        }
+        if (colIndex <= 0) {
+            return;
+        }
 
         colIndex--;
         current[colIndex] = 0;
 
         for (int w = 0; w < wordsCount; w++) {
-            if (solvedBefore[w]) continue;
+            if (solvedBefore[w]) {
+                continue;
+            }
             Cell cell = cells[w][rowIndex][colIndex];
             cell.clearMain();
             cell.setTileBgEmpty();
@@ -467,17 +588,19 @@ public class WordleView extends BorderPane {
         refreshHintsForTypingRow();
     }
 
-    // ---------- Hint system (show known greens behind typing row) ----------
     private void refreshHintsForTypingRow() {
-        if (rowIndex >= chances) return;
+        if (rowIndex >= chances) {
+            return;
+        }
 
         for (int w = 0; w < wordsCount; w++) {
-            if (solvedBefore[w]) continue;
+            if (solvedBefore[w]) {
+                continue;
+            }
 
             for (int c = 0; c < letters; c++) {
                 Cell cell = cells[w][rowIndex][c];
 
-                // reset empty tile visuals for typing row cells we haven't colored yet
                 cell.setTileBgEmpty();
 
                 char hint = knownGreens[w][c];
@@ -490,78 +613,12 @@ public class WordleView extends BorderPane {
         }
     }
 
-    // ---------- Keyboard (small) ----------
-    private VBox buildKeyboard(Runnable onEnter, Runnable onBackspace, java.util.function.Consumer<Character> onLetter) {
-        // German QWERTZ layout
-        String[] r1 = {"Q","W","E","R","T","Z","U","I","O","P"};
-        String[] r2 = {"A","S","D","F","G","H","J","K","L"};
-        String[] r3 = {"ENTER","Y","X","C","V","B","N","M","⌫"};
-
-        VBox kb = new VBox(8,
-                keyboardRow(r1, onEnter, onBackspace, onLetter),
-                keyboardRow(r2, onEnter, onBackspace, onLetter),
-                keyboardRow(r3, onEnter, onBackspace, onLetter)
-        );
-        kb.setAlignment(Pos.CENTER);
-        kb.setPadding(new Insets(6, 0, 0, 0));
-        return kb;
-    }
-
-    private HBox keyboardRow(String[] keys, Runnable onEnter, Runnable onBackspace, java.util.function.Consumer<Character> onLetter) {
-        HBox row = new HBox(8);
-        row.setAlignment(Pos.CENTER);
-
-        for (String k : keys) {
-            Button b = new Button(k);
-
-            // Smaller keyboard
-            b.setPrefHeight(42);
-            if (k.equals("ENTER")) b.setPrefWidth(120);
-            else if (k.equals("⌫")) b.setPrefWidth(70);
-            else b.setPrefWidth(50);
-
-            b.setStyle("-fx-font-size: 14px; -fx-font-weight: bold;");
-
-            if (k.length() == 1 && Character.isLetter(k.charAt(0))) {
-                keyButtons.put(k.charAt(0), b);
-            }
-
-            b.setOnAction(e -> {
-                if (game.isGameOver()) return;
-
-                if (k.equals("ENTER")) {
-                    onEnter.run();
-                } else if (k.equals("⌫")) {
-                    onBackspace.run();
-                } else {
-                    onLetter.accept(k.charAt(0));
-                }
-                requestFocus();
-            });
-
-            row.getChildren().add(b);
-        }
-        return row;
-    }
-
-    // ---------- Keyboard greying rule ----------
-    // Grey a key ONLY if:
-    // 1) player has used that letter in guesses (usedLetters contains it)
-    // AND
-    // 2) either the letter is in none of the target words OR it's fully "resolved" (all its occurrences are confirmed green in every word that contains it)
-    // Never disable the key.
     private void updateKeyboardGreying() {
-        String[] targetWords = game.getWords(); // expected to be uppercase
+        String[] targetWords = game.getWords();
 
-        for (Map.Entry<Character, Button> entry : keyButtons.entrySet()) {
-            char L = entry.getKey();
-            Button btn = entry.getValue();
-
-            // default
-            btn.setStyle("-fx-font-size: 14px; -fx-font-weight: bold;");
-
-            if (!usedLetters.contains(L)) {
-                continue; // do NOT reveal info before use
+        for (char letter : usedLetters) {
+            if (letter < 'A' || letter > 'Z') {
+                continue;
             }
 
             boolean appearsSomewhere = false;
@@ -573,12 +630,11 @@ public class WordleView extends BorderPane {
                 boolean allOccurrencesGreen = true;
 
                 for (int pos = 0; pos < letters; pos++) {
-                    if (word.charAt(pos) == L) {
+                    if (word.charAt(pos) == letter) {
                         appearsInThisWord = true;
                         appearsSomewhere = true;
 
-                        // must be known green at that exact pos
-                        if (knownGreens[w][pos] != L) {
+                        if (knownGreens[w][pos] != letter) {
                             allOccurrencesGreen = false;
                         }
                     }
@@ -590,16 +646,15 @@ public class WordleView extends BorderPane {
             }
 
             boolean shouldGrey = (!appearsSomewhere) || fullyResolvedEverywhere;
-
             if (shouldGrey) {
-                // Grey (but still clickable)
-                btn.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-background-color: #787C7E; -fx-text-fill: white;");
+                keyboardColors.promoteKey(letter, 1);
             }
         }
     }
 
-    // ---------- Endgame UI ----------
-    private void endGameUI(Button backBtn, Button giveUpBtn) {
+    private void endGameUI() {
+        uiLocked = true;
+
         giveUpBtn.setVisible(false);
         giveUpBtn.setManaged(false);
 
@@ -609,18 +664,85 @@ public class WordleView extends BorderPane {
         requestFocus();
     }
 
-    private void showLosing(VBox losingContent) {
-        losingContent.getChildren().clear();
+
+    private ScrollPane wrapCenterInScroll(VBox content) {
+        ScrollPane scroll = new ScrollPane(content);
+        scroll.setFitToWidth(true);
+        scroll.setPannable(true);
+        scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        return scroll;
+    }
+
+    private void showStandardWinWordle() {
+        VBox content = new VBox(10);
+        content.setAlignment(Pos.CENTER);
+        content.setPadding(new Insets(20));
+
+        Label won = new Label("You win!");
+        won.setStyle(GameStyles.TITLE);
+        content.getChildren().add(won);
+
+        setCenter(wrapCenterInScroll(content));
+
+        message.setStyle(GameStyles.MSG_GREEN);
+        message.setText("You solved all words!");
+
+        endGameUI();
+    }
+
+
+    private void showStandardLoseWordle(String msg) {
+        VBox content = new VBox(10);
+        content.setAlignment(Pos.CENTER);
+        content.setPadding(new Insets(20));
 
         Label lost = new Label("You lost. The words were:");
         lost.setStyle("-fx-font-size: 30px; -fx-font-weight: bold;");
-        losingContent.getChildren().add(lost);
+        content.getChildren().add(lost);
 
-        String[] ws = game.getWords();
-        for (String w : ws) {
+        for (String w : game.getWords()) {
             Label wLabel = new Label(w);
             wLabel.setStyle("-fx-font-size: 22px; -fx-font-weight: bold;");
-            losingContent.getChildren().add(wLabel);
+            content.getChildren().add(wLabel);
         }
+
+        setCenter(wrapCenterInScroll(content));
+
+        message.setStyle(GameStyles.MSG_RED);
+        message.setText(msg);
+
+        endGameUI();
     }
+
+
+    private KeyboardPane buildLetterKeyboard() {
+        String[][] rows = {
+                {"Q", "W", "E", "R", "T", "Z", "U", "I", "O", "P"},
+                {"A", "S", "D", "F", "G", "H", "J", "K", "L"},
+                {"ENTER", "Y", "X", "C", "V", "B", "N", "M", "⌫"}
+        };
+
+        KeyboardPane.KeySizing sizing = new KeyboardPane.KeySizing(
+                42, 50, 120, 70,
+                8, 8,
+                new Insets(6, 0, 0, 0)
+        );
+
+        KeyboardPane.Handlers handlers = new KeyboardPane.Handlers(
+                this::submit,
+                this::backspace,
+                this::typeChar,
+                this::requestFocus
+        );
+
+        return new KeyboardPane(
+                rows,
+                sizing,
+                k -> GameStyles.keyBase(),
+                keyboardColors,
+                handlers
+        );
+    }
+
 }

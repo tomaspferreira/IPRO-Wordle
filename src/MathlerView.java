@@ -12,30 +12,78 @@ import javafx.scene.layout.VBox;
 
 public class MathlerView extends BorderPane {
 
+    /**
+     * Navigator used to switch between screens.
+     */
     private final Navigator nav;
+
+    /**
+     * Game logic for Mathler.
+     */
     private final MathlerLogic game;
 
+    /**
+     * Required length of an equation guess.
+     */
     private final int len;
+
+    /**
+     * Number of allowed guesses.
+     */
     private final int chances;
 
+    /**
+     * Current row index in the grid.
+     */
     private int rowIndex = 0;
+
+    /**
+     * Current column index in the grid.
+     */
     private int colIndex = 0;
+
+    /**
+     * Current guess characters being typed.
+     */
     private final char[] current;
 
+    /**
+     * Message label shown under remaining guesses.
+     */
     private final Label message = new Label("");
+
+    /**
+     * Label showing remaining guesses.
+     */
     private final Label remaining;
 
+    /**
+     * Grid holding the tile labels.
+     */
     private final GridPane grid = new GridPane();
-    private final Label[][] tiles; // [row][col], we add rows progressively
 
-    // Keyboard coloring (never downgrade)
-    private final java.util.Map<Character, Button> keyButtons = new java.util.HashMap<>();
-    private final java.util.Map<Character, Integer> keyRank = new java.util.HashMap<>();
+    /**
+     * Tile labels by row and column.
+     */
+    private final Label[][] tiles;
 
+    /**
+     * Keyboard coloring manager (never downgrade).
+     */
+    private final KeyboardColorManager keyboardColors = new KeyboardColorManager();
+
+    /**
+     * Action executed when ENTER is pressed.
+     */
     private Runnable enterAction;
 
-    public MathlerView(Navigator nav, int numbersCount) {
-        this.nav = nav;
+    /**
+     * Whether UI input is locked (game ended / give up).
+     */
+    private boolean uiLocked = false;
+
+    public MathlerView(Navigator navigator, int numbersCount) {
+        this.nav = navigator;
         this.game = new MathlerLogic(numbersCount);
 
         this.len = game.getEquationLength();
@@ -43,10 +91,11 @@ public class MathlerView extends BorderPane {
         this.current = new char[len];
 
         this.remaining = new Label("Guesses left: " + chances);
+        remaining.setStyle(GameStyles.INFO);
+        message.setStyle(GameStyles.MSG_RED);
 
-        // ---------- TOP ----------
         Label title = new Label("Mathler");
-        title.setStyle("-fx-font-size: 48px; -fx-font-weight: bold;");
+        title.setStyle(GameStyles.TITLE);
         BorderPane.setAlignment(title, Pos.CENTER);
         BorderPane.setMargin(title, new Insets(20, 0, 10, 0));
 
@@ -57,10 +106,6 @@ public class MathlerView extends BorderPane {
         top.setAlignment(Pos.CENTER);
         setTop(top);
 
-        message.setStyle("-fx-text-fill: red; -fx-font-size: 16px;");
-        remaining.setStyle("-fx-font-size: 16px;");
-
-        // ---------- GRID ----------
         grid.setHgap(8);
         grid.setVgap(8);
         grid.setAlignment(Pos.CENTER);
@@ -68,53 +113,67 @@ public class MathlerView extends BorderPane {
 
         tiles = new Label[chances][len];
 
-        // Create all labels but DO NOT add them yet
         for (int r = 0; r < chances; r++) {
             for (int c = 0; c < len; c++) {
                 Label t = new Label(" ");
-                t.setMinSize(55, 55);
+                t.setMinSize(GameStyles.TILE_SIZE, GameStyles.TILE_SIZE);
+                t.setPrefSize(GameStyles.TILE_SIZE, GameStyles.TILE_SIZE);
+                t.setMaxSize(GameStyles.TILE_SIZE, GameStyles.TILE_SIZE);
                 t.setAlignment(Pos.CENTER);
-                t.setStyle(baseStyle());
+                t.setStyle(GameStyles.tileBase() + GameStyles.tileEmpty());
                 tiles[r][c] = t;
             }
         }
 
-        // Add ONLY first row so grid shows immediately
         addRowToGrid(0);
 
         ScrollPane centerScroll = new ScrollPane(grid);
         centerScroll.setFitToWidth(true);
         centerScroll.setFitToHeight(true);
         centerScroll.setPannable(true);
+        centerScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        centerScroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
         setCenter(centerScroll);
 
-        // ---------- BOTTOM ----------
         Button backBtn = new Button("Back");
-        backBtn.setPrefWidth(160);
-        backBtn.setPrefHeight(50);
-        backBtn.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
+        backBtn.setPrefWidth(140);
+        backBtn.setPrefHeight(44);
+        backBtn.setStyle(GameStyles.bigButton());
+        backBtn.setFocusTraversable(false);
         backBtn.setVisible(false);
         backBtn.setManaged(false);
 
         Button giveUpBtn = new Button("Give up");
         giveUpBtn.setPrefWidth(160);
-        giveUpBtn.setPrefHeight(50);
-        giveUpBtn.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
+        giveUpBtn.setPrefHeight(44);
+        giveUpBtn.setStyle(GameStyles.bigButton());
+        giveUpBtn.setFocusTraversable(false);
 
-        VBox keyboard = buildMathKeyboard(); // includes ENTER + ⌫
+        KeyboardPane keyboard = buildMathKeyboard();
 
-        VBox bottom = new VBox(10, keyboard, giveUpBtn, remaining, message);
+        HBox topActions = new HBox(12, backBtn);
+        topActions.setAlignment(Pos.CENTER);
+
+        HBox giveUpRow = new HBox(giveUpBtn);
+        giveUpRow.setAlignment(Pos.CENTER);
+
+        VBox bottom = new VBox(10, topActions, remaining, message, keyboard, giveUpRow);
         bottom.setAlignment(Pos.CENTER);
-        bottom.setPadding(new Insets(15));
+        bottom.setPadding(new Insets(14));
         setBottom(bottom);
 
-        // If you want language-aware settings later, store language in this class
-        backBtn.setOnAction(e -> nav.goToSettings("en", "Mathler"));
+        backBtn.setOnAction(_ -> nav.goToSettings("en", "Mathler"));
 
-        giveUpBtn.setOnAction(e -> showLose(backBtn, giveUpBtn, "You gave up."));
+        giveUpBtn.setOnAction(_ -> {
+            uiLocked = true;
+            showStandardLose(backBtn, giveUpBtn, "You gave up.");
+        });
 
-        // ---------- SUBMIT ----------
-        Runnable submit = () -> {
+        this.enterAction = () -> {
+            if (uiLocked) {
+                return;
+            }
+
             if (game.isGameOver()) {
                 message.setText("Game over.");
                 return;
@@ -138,53 +197,63 @@ public class MathlerView extends BorderPane {
                 return;
             }
 
-            // paint row + update keyboard colors
             for (int c = 0; c < len; c++) {
                 Label t = tiles[rowIndex][c];
-                char ch = r.guess.charAt(c);
-                t.setText(String.valueOf(ch));
-                t.setStyle(baseStyle() + styleFor(r.tiles[c]));
+                char ch = r.getGuess().charAt(c);
 
-                promoteKey(ch, rankForMathTile(r.tiles[c]));
+                t.setText(String.valueOf(ch));
+                t.setStyle(GameStyles.tileBase() + styleFor(r.getTiles()[c]));
+
+                if (ch == 'x' || ch == 'X') {
+                    ch = '*';
+                }
+                keyboardColors.promoteKey(ch, rankForMathTile(r.getTiles()[c]));
             }
 
-            remaining.setText("Guesses left: " + r.remainingGuesses);
+            remaining.setText("Guesses left: " + r.getRemainingGuesses());
             message.setText("");
 
-            if (r.gameWon) {
-                showWin(backBtn, giveUpBtn);
+            if (r.isGameWon()) {
+                uiLocked = true;
+                showStandardWin(backBtn, giveUpBtn, "Correct!");
                 return;
             }
-            if (r.gameOver) {
-                showLose(backBtn, giveUpBtn, "Out of guesses.");
+            if (r.isGameOver()) {
+                uiLocked = true;
+                showStandardLose(backBtn, giveUpBtn, "Out of guesses.");
                 return;
             }
 
-            // next row
             rowIndex++;
             colIndex = 0;
-            for (int i = 0; i < len; i++) current[i] = 0;
+            for (int i = 0; i < len; i++) {
+                current[i] = 0;
+            }
 
             if (rowIndex < chances) {
                 addRowToGrid(rowIndex);
             }
+
+            requestFocus();
         };
 
-        // ENTER handler used by GUI keyboard + physical keyboard
-        this.enterAction = submit;
-
-        // Physical keyboard support too (GUI keyboard solves shift issues anyway)
         setFocusTraversable(true);
-        setOnKeyPressed(e -> {
-            if (game.isGameOver()) return;
+        setOnMousePressed(_ -> requestFocus());
 
-            // ENTER submits
-            if (e.getCode() == KeyCode.ENTER) {
-                if (enterAction != null) enterAction.run();
+        setOnKeyPressed(e -> {
+            if (uiLocked) {
+                return;
+            }
+            if (game.isGameOver()) {
                 return;
             }
 
-            // BACKSPACE deletes
+            if (e.getCode() == KeyCode.ENTER) {
+                if (enterAction != null) {
+                    enterAction.run();
+                }
+                return;
+            }
             if (e.getCode() == KeyCode.BACK_SPACE) {
                 backspace();
                 return;
@@ -192,57 +261,115 @@ public class MathlerView extends BorderPane {
 
             boolean shift = e.isShiftDown();
 
-            // Map digit keys + shift to operators (layout-safe)
             if (e.getCode() == KeyCode.DIGIT1) {
-                if (shift) typeChar('+'); else typeChar('1');
+                typeChar(shift ? '+' : '1');
                 return;
             }
             if (e.getCode() == KeyCode.DIGIT3) {
-                if (shift) typeChar('*'); else typeChar('3');
+                typeChar(shift ? '*' : '3');
                 return;
             }
             if (e.getCode() == KeyCode.DIGIT7) {
-                if (shift) typeChar('/'); else typeChar('7');
+                typeChar(shift ? '/' : '7');
                 return;
             }
 
-            // Other digits (0,2,4,5,6,8,9)
-            if (e.getCode() == KeyCode.DIGIT0) { typeChar('0'); return; }
-            if (e.getCode() == KeyCode.DIGIT2) { typeChar('2'); return; }
-            if (e.getCode() == KeyCode.DIGIT4) { typeChar('4'); return; }
-            if (e.getCode() == KeyCode.DIGIT5) { typeChar('5'); return; }
-            if (e.getCode() == KeyCode.DIGIT6) { typeChar('6'); return; }
-            if (e.getCode() == KeyCode.DIGIT8) { typeChar('8'); return; }
-            if (e.getCode() == KeyCode.DIGIT9) { typeChar('9'); return; }
+            if (e.getCode() == KeyCode.DIGIT0) {
+                typeChar('0');
+                return;
+            }
+            if (e.getCode() == KeyCode.DIGIT2) {
+                typeChar('2');
+                return;
+            }
+            if (e.getCode() == KeyCode.DIGIT4) {
+                typeChar('4');
+                return;
+            }
+            if (e.getCode() == KeyCode.DIGIT5) {
+                typeChar('5');
+                return;
+            }
+            if (e.getCode() == KeyCode.DIGIT6) {
+                typeChar('6');
+                return;
+            }
+            if (e.getCode() == KeyCode.DIGIT8) {
+                typeChar('8');
+                return;
+            }
+            if (e.getCode() == KeyCode.DIGIT9) {
+                typeChar('9');
+                return;
+            }
 
-            // Numpad support
-            if (e.getCode() == KeyCode.NUMPAD0) { typeChar('0'); return; }
-            if (e.getCode() == KeyCode.NUMPAD1) { typeChar('1'); return; }
-            if (e.getCode() == KeyCode.NUMPAD2) { typeChar('2'); return; }
-            if (e.getCode() == KeyCode.NUMPAD3) { typeChar('3'); return; }
-            if (e.getCode() == KeyCode.NUMPAD4) { typeChar('4'); return; }
-            if (e.getCode() == KeyCode.NUMPAD5) { typeChar('5'); return; }
-            if (e.getCode() == KeyCode.NUMPAD6) { typeChar('6'); return; }
-            if (e.getCode() == KeyCode.NUMPAD7) { typeChar('7'); return; }
-            if (e.getCode() == KeyCode.NUMPAD8) { typeChar('8'); return; }
-            if (e.getCode() == KeyCode.NUMPAD9) { typeChar('9'); return; }
+            if (e.getCode() == KeyCode.NUMPAD0) {
+                typeChar('0');
+                return;
+            }
+            if (e.getCode() == KeyCode.NUMPAD1) {
+                typeChar('1');
+                return;
+            }
+            if (e.getCode() == KeyCode.NUMPAD2) {
+                typeChar('2');
+                return;
+            }
+            if (e.getCode() == KeyCode.NUMPAD3) {
+                typeChar('3');
+                return;
+            }
+            if (e.getCode() == KeyCode.NUMPAD4) {
+                typeChar('4');
+                return;
+            }
+            if (e.getCode() == KeyCode.NUMPAD5) {
+                typeChar('5');
+                return;
+            }
+            if (e.getCode() == KeyCode.NUMPAD6) {
+                typeChar('6');
+                return;
+            }
+            if (e.getCode() == KeyCode.NUMPAD7) {
+                typeChar('7');
+                return;
+            }
+            if (e.getCode() == KeyCode.NUMPAD8) {
+                typeChar('8');
+                return;
+            }
+            if (e.getCode() == KeyCode.NUMPAD9) {
+                typeChar('9');
+                return;
+            }
 
-            // Direct operator keys (if they exist on the keyboard)
-            if (e.getCode() == KeyCode.PLUS || e.getCode() == KeyCode.ADD) { typeChar('+'); return; }
-            if (e.getCode() == KeyCode.MINUS || e.getCode() == KeyCode.SUBTRACT) { typeChar('-'); return; }
-            if (e.getCode() == KeyCode.SLASH || e.getCode() == KeyCode.DIVIDE) { typeChar('/'); return; }
-            if (e.getCode() == KeyCode.ASTERISK || e.getCode() == KeyCode.MULTIPLY) { typeChar('*'); return; }
+            if (e.getCode() == KeyCode.PLUS || e.getCode() == KeyCode.ADD) {
+                typeChar('+');
+                return;
+            }
+            if (e.getCode() == KeyCode.MINUS || e.getCode() == KeyCode.SUBTRACT) {
+                typeChar('-');
+                return;
+            }
+            if (e.getCode() == KeyCode.SLASH || e.getCode() == KeyCode.DIVIDE) {
+                typeChar('/');
+                return;
+            }
+            if (e.getCode() == KeyCode.ASTERISK || e.getCode() == KeyCode.MULTIPLY) {
+                typeChar('*');
+                return;
+            }
 
-            // As fallback, still try text for other cases
             String txt = e.getText();
             if (txt != null && txt.length() == 1) {
                 char ch = txt.charAt(0);
-                if (isAllowedMathChar(ch)) typeChar(ch);
+                if (isAllowedMathChar(ch)) {
+                    typeChar(ch);
+                }
             }
         });
 
-
-        // Ensure first render + focus
         Platform.runLater(() -> {
             applyCss();
             layout();
@@ -250,188 +377,175 @@ public class MathlerView extends BorderPane {
         });
     }
 
-    // ---------------- grid progressive reveal ----------------
     private void addRowToGrid(int row) {
         for (int c = 0; c < len; c++) {
-            if (!grid.getChildren().contains(tiles[row][c])) {
-                grid.add(tiles[row][c], c, row);
-            }
+            grid.add(tiles[row][c], c, row);
         }
     }
 
-    // ---------------- typing ----------------
     private void typeChar(char ch) {
-        if (game.isGameOver()) return;
-        if (rowIndex >= chances) return;
-        if (colIndex >= len) return;
+        if (uiLocked) {
+            return;
+        }
+        if (game.isGameOver()) {
+            return;
+        }
+        if (rowIndex >= chances) {
+            return;
+        }
+        if (colIndex >= len) {
+            return;
+        }
 
-        // Normalize: allow both 'x' and 'X' -> '*'
-        if (ch == 'x' || ch == 'X') ch = '*';
+        if (ch == 'x' || ch == 'X') {
+            ch = '*';
+        }
 
-        // Keep exactly what user typed for operators; for digits keep digit
         current[colIndex] = ch;
 
-        tiles[rowIndex][colIndex].setText(String.valueOf(ch));
+        Label t = tiles[rowIndex][colIndex];
+        t.setText(String.valueOf(ch));
+        t.setStyle(GameStyles.tileBase() + GameStyles.tileEmpty());
+
         colIndex++;
     }
 
     private void backspace() {
-        if (colIndex <= 0) return;
+        if (uiLocked) {
+            return;
+        }
+        if (colIndex <= 0) {
+            return;
+        }
 
         colIndex--;
         current[colIndex] = 0;
-        tiles[rowIndex][colIndex].setText(" ");
+
+        Label t = tiles[rowIndex][colIndex];
+        t.setText(" ");
+        t.setStyle(GameStyles.tileBase() + GameStyles.tileEmpty());
     }
 
     private boolean isAllowedMathChar(char ch) {
-        return (ch >= '0' && ch <= '9') || ch == '+' || ch == '-' || ch == '*' || ch == '/' || ch == 'x' || ch == 'X';
-    }
-
-    // ---------------- styles ----------------
-    private String baseStyle() {
-        return "-fx-border-color: #444; -fx-font-size: 22px; -fx-font-weight: bold; -fx-alignment: center;";
+        return (ch >= '0' && ch <= '9')
+                || ch == '+'
+                || ch == '-'
+                || ch == '*'
+                || ch == '/'
+                || ch == 'x'
+                || ch == 'X';
     }
 
     private String styleFor(MathlerLogic.Tile tile) {
-        return switch (tile) {
-            case GREEN -> "-fx-background-color: #4CAF50; -fx-text-fill: white;";
-            case YELLOW -> "-fx-background-color: #C9B458; -fx-text-fill: white;";
-            default -> "-fx-background-color: #787C7E; -fx-text-fill: white;";
-        };
+        if (tile == MathlerLogic.Tile.GREEN) {
+            return GameStyles.tileGreen();
+        }
+        if (tile == MathlerLogic.Tile.YELLOW) {
+            return GameStyles.tileYellow();
+        }
+        return GameStyles.tileGrey();
     }
 
-    // ---------------- win/lose screens ----------------
-    private void showLose(Button backBtn, Button giveUpBtn, String msg) {
+    private void showStandardWin(Button backBtn, Button giveUpBtn, String messageText) {
+        VBox content = new VBox(10);
+        content.setAlignment(Pos.CENTER);
+        content.setPadding(new Insets(20));
+
+        Label won = new Label("You win!");
+        won.setStyle(GameStyles.TITLE);
+        content.getChildren().add(won);
+
+        ScrollPane scroll = new ScrollPane(content);
+        scroll.setFitToWidth(true);
+        scroll.setPannable(true);
+        scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        setCenter(scroll);
+
+        message.setStyle(GameStyles.MSG_GREEN);
+        message.setText(messageText);
+
+        giveUpBtn.setVisible(false);
+        giveUpBtn.setManaged(false);
+        backBtn.setVisible(true);
+        backBtn.setManaged(true);
+
+        requestFocus();
+    }
+
+    private void showStandardLose(Button backBtn, Button giveUpBtn, String msg) {
+        VBox content = new VBox(10);
+        content.setAlignment(Pos.CENTER);
+        content.setPadding(new Insets(20));
+
         Label lost = new Label("You lost. The equation was:");
-        lost.setStyle("-fx-font-size: 36px;");
+        lost.setStyle("-fx-font-size: 30px; -fx-font-weight: bold;");
+        content.getChildren().add(lost);
 
         Label answer = new Label(game.getEquation());
-        answer.setStyle("-fx-font-size: 28px; -fx-font-weight: bold;");
+        answer.setStyle("-fx-font-size: 22px; -fx-font-weight: bold;");
+        content.getChildren().add(answer);
 
-        VBox losing = new VBox(15, lost, answer);
-        losing.setAlignment(Pos.CENTER);
-        losing.setPadding(new Insets(20));
+        ScrollPane scroll = new ScrollPane(content);
+        scroll.setFitToWidth(true);
+        scroll.setPannable(true);
+        scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        setCenter(scroll);
 
-        setCenter(losing);
-
+        message.setStyle(GameStyles.MSG_RED);
         message.setText(msg);
-        giveUpBtn.setVisible(false);
-        giveUpBtn.setManaged(false);
-        backBtn.setVisible(true);
-        backBtn.setManaged(true);
-
-        VBox bottom = (VBox) getBottom();
-        if (!bottom.getChildren().contains(backBtn)) {
-            bottom.getChildren().add(1, backBtn);
-        }
-    }
-
-    private void showWin(Button backBtn, Button giveUpBtn) {
-        Label won = new Label("You win!");
-        won.setStyle("-fx-font-size: 48px; -fx-font-weight: bold;");
-        setCenter(won);
-
-        message.setStyle("-fx-text-fill: green; -fx-font-size: 16px;");
-        message.setText("Correct!");
 
         giveUpBtn.setVisible(false);
         giveUpBtn.setManaged(false);
         backBtn.setVisible(true);
         backBtn.setManaged(true);
 
-        VBox bottom = (VBox) getBottom();
-        if (!bottom.getChildren().contains(backBtn)) {
-            bottom.getChildren().add(1, backBtn);
-        }
+        requestFocus();
     }
 
-    // ---------------- keyboard UI (smaller) ----------------
-    private VBox buildMathKeyboard() {
-        // Keep it compact and include operators directly (no shift needed)
-        String[] r1 = {"1","2","3","+","-"};
-        String[] r2 = {"4","5","6","*","/"};
-        String[] r3 = {"7","8","9","0"};
-        String[] r4 = {"ENTER","⌫"};
+    private KeyboardPane buildMathKeyboard() {
+        String[][] rows = {
+                {"1", "2", "3", "+", "-"},
+                {"4", "5", "6", "*", "/"},
+                {"7", "8", "9", "0"},
+                {"ENTER", "⌫"}
+        };
 
-        VBox kb = new VBox(6,
-                mathRow(r1),
-                mathRow(r2),
-                mathRow(r3),
-                mathRow(r4)
+        KeyboardPane.KeySizing sizing = new KeyboardPane.KeySizing(
+                42, 54, 140, 90,
+                8, 8,
+                new Insets(6, 0, 0, 0)
         );
-        kb.setAlignment(Pos.CENTER);
-        kb.setPadding(new Insets(5, 0, 0, 0));
-        return kb;
+
+        KeyboardPane.Handlers handlers = new KeyboardPane.Handlers(
+                () -> {
+                    if (enterAction != null) {
+                        enterAction.run();
+                    }
+                },
+                this::backspace,
+                this::typeChar,
+                this::requestFocus
+        );
+
+        return new KeyboardPane(
+                rows,
+                sizing,
+                _ -> GameStyles.keyBase(),
+                keyboardColors,
+                handlers
+        );
     }
 
-    private HBox mathRow(String[] keys) {
-        HBox row = new HBox(6);
-        row.setAlignment(Pos.CENTER);
 
-        for (String k : keys) {
-            Button b = new Button(k);
-            b.setPrefHeight(40);
-
-            if (k.equals("ENTER")) b.setPrefWidth(140);
-            else if (k.equals("⌫")) b.setPrefWidth(90);
-            else b.setPrefWidth(54);
-
-            b.setStyle("-fx-font-size: 14px; -fx-font-weight: bold;");
-
-            // store for coloring (only single-char keys)
-            if (k.length() == 1) {
-                char ch = k.charAt(0);
-                keyButtons.put(ch, b);
-                keyRank.put(ch, 0);
-            }
-
-            b.setOnAction(e -> {
-                if (k.equals("ENTER")) {
-                    if (enterAction != null) enterAction.run();
-                } else if (k.equals("⌫")) {
-                    backspace();
-                } else {
-                    typeChar(k.charAt(0));
-                }
-            });
-
-            row.getChildren().add(b);
-        }
-
-        return row;
-    }
-
-    // ---------------- keyboard coloring ----------------
-    // rank: 0 none, 1 grey, 2 yellow, 3 green
     private int rankForMathTile(MathlerLogic.Tile t) {
-        return switch (t) {
-            case GREY -> 1;
-            case YELLOW -> 2;
-            case GREEN -> 3;
-        };
-    }
-
-    private void promoteKey(char ch, int newRank) {
-        // Normalize key for '*' if someone used x/X
-        if (ch == 'x' || ch == 'X') ch = '*';
-
-        Button b = keyButtons.get(ch);
-        if (b == null) return;
-
-        int old = keyRank.getOrDefault(ch, 0);
-        if (newRank > old) {
-            keyRank.put(ch, newRank);
-            b.setStyle(styleForRank(newRank));
+        if (t == MathlerLogic.Tile.GREY) {
+            return 1;
         }
-    }
-
-    private String styleForRank(int rank) {
-        String base = "-fx-font-size: 14px; -fx-font-weight: bold;";
-        return switch (rank) {
-            case 1 -> base + "-fx-background-color: #787C7E; -fx-text-fill: white;";
-            case 2 -> base + "-fx-background-color: #C9B458; -fx-text-fill: white;";
-            case 3 -> base + "-fx-background-color: #4CAF50; -fx-text-fill: white;";
-            default -> base;
-        };
+        if (t == MathlerLogic.Tile.YELLOW) {
+            return 2;
+        }
+        return 3;
     }
 }

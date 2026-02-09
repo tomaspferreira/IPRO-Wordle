@@ -17,3 +17,4 @@ public class Clusterle extends Application {
         launch(args);
     }
 }
+

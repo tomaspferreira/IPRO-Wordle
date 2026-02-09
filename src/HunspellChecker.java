@@ -1,10 +1,18 @@
 import com.nikialeksey.hunspell.Hunspell;
 
+/**
+ * Utility class responsible for loading and using Hunspell dictionaries
+ * to validate words for different languages.
+ */
 public final class HunspellChecker {
 
+    /**
+     * Singleton Hunspell instance used for spell checking.
+     */
     private static Hunspell hunspell;
 
     private HunspellChecker() {
+        // Utility class
     }
 
     static void init(String language) {
@@ -39,4 +47,3 @@ public final class HunspellChecker {
                 || hunspell.spell(word.toUpperCase());
     }
 }
-

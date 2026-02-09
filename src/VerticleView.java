@@ -12,56 +12,97 @@ import javafx.scene.layout.VBox;
 
 public class VerticleView extends BorderPane {
 
+    /**
+     * Navigator used to switch between screens.
+     */
     private final Navigator nav;
+
+    /**
+     * Current language code (e.g. "en", "de").
+     */
     private final String language;
 
+    /**
+     * Game logic for Verticle.
+     */
     private final VerticleLogic game;
 
+    /**
+     * Number of letters in the secret word.
+     */
     private final int letters;
+
+    /**
+     * Number of allowed guesses/columns.
+     */
     private final int chances;
 
-    private int typedIndex = 0;              // typing goes DOWN the current column
+    /**
+     * Index of how many letters were typed in the current column (goes down).
+     */
+    private int typedIndex = 0;
+
+    /**
+     * Current guess characters for the column being typed.
+     */
     private final char[] current;
 
+    /**
+     * Message label shown under remaining guesses.
+     */
     private final Label message = new Label("");
+
+    /**
+     * Label showing remaining guesses.
+     */
     private final Label remaining;
 
+    /**
+     * Grid holding the tile labels.
+     */
     private final GridPane grid = new GridPane();
-    private final Label[][] tiles; // [row][col] rows=letters, cols=tries, but we only ADD columns
 
-    // Keyboard coloring
-    private final java.util.Map<Character, Button> keyButtons = new java.util.HashMap<>();
-    private final java.util.Map<Character, Integer> keyRank = new java.util.HashMap<>();
+    /**
+     * Tile labels indexed by [row][col].
+     */
+    private final Label[][] tiles;
 
+    /**
+     * Keyboard coloring manager (never downgrade).
+     */
+    private final KeyboardColorManager keyboardColors = new KeyboardColorManager();
+
+    /**
+     * Action executed when ENTER is pressed.
+     */
     private Runnable enterAction;
 
-    public VerticleView(Navigator nav, String language, int lettersInput) {
-        this.nav = nav;
-        this.language = language;
+    /**
+     * Whether the UI input is locked (game ended / give up).
+     */
+    private boolean uiLocked = false;
+
+    public VerticleView(Navigator navigator, String languageValue, int lettersInput) {
+        this.nav = navigator;
+        this.language = languageValue;
 
         Language lang = new Language(language);
         this.game = new VerticleLogic(lettersInput, lang);
 
         this.letters = game.getLetters();
-        this.chances = game.getChances(); // must be == letters
+        this.chances = game.getChances();
         this.current = new char[this.letters];
 
         this.remaining = new Label("Guesses left: " + chances);
+        remaining.setStyle(GameStyles.INFO);
+        message.setStyle(GameStyles.MSG_RED);
 
-        // ---------- TOP ----------
         Label title = new Label("Verticle");
-        title.setStyle("-fx-font-size: 48px; -fx-font-weight: bold;");
+        title.setStyle(GameStyles.TITLE);
         BorderPane.setAlignment(title, Pos.CENTER);
         BorderPane.setMargin(title, new Insets(20, 0, 10, 0));
+        setTop(title);
 
-        message.setStyle("-fx-text-fill: red; -fx-font-size: 16px;");
-        remaining.setStyle("-fx-font-size: 16px;");
-
-        VBox top = new VBox(6, title);
-        top.setAlignment(Pos.CENTER);
-        setTop(top);
-
-        // ---------- GRID ----------
         grid.setHgap(8);
         grid.setVgap(8);
         grid.setAlignment(Pos.CENTER);
@@ -69,51 +110,67 @@ public class VerticleView extends BorderPane {
 
         tiles = new Label[letters][chances];
 
-        // Create labels but don't add to grid
         for (int r = 0; r < letters; r++) {
             for (int c = 0; c < chances; c++) {
                 Label t = new Label(" ");
-                t.setMinSize(55, 55);
+                t.setMinSize(GameStyles.TILE_SIZE, GameStyles.TILE_SIZE);
+                t.setPrefSize(GameStyles.TILE_SIZE, GameStyles.TILE_SIZE);
+                t.setMaxSize(GameStyles.TILE_SIZE, GameStyles.TILE_SIZE);
                 t.setAlignment(Pos.CENTER);
-                t.setStyle(baseStyle());
+                t.setStyle(GameStyles.tileBase() + GameStyles.tileEmpty());
                 tiles[r][c] = t;
             }
         }
 
-        // Add ONLY the first column at start so grid is visible
         addColumnToGrid(0);
 
         ScrollPane centerScroll = new ScrollPane(grid);
         centerScroll.setFitToWidth(true);
         centerScroll.setFitToHeight(true);
         centerScroll.setPannable(true);
+        centerScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        centerScroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
         setCenter(centerScroll);
 
-        // ---------- BOTTOM ----------
         Button backBtn = new Button("Back");
-        backBtn.setPrefWidth(160);
-        backBtn.setPrefHeight(50);
-        backBtn.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
+        backBtn.setPrefWidth(140);
+        backBtn.setPrefHeight(44);
+        backBtn.setStyle(GameStyles.bigButton());
+        backBtn.setFocusTraversable(false);
         backBtn.setVisible(false);
         backBtn.setManaged(false);
 
         Button giveUpBtn = new Button("Give up");
         giveUpBtn.setPrefWidth(160);
-        giveUpBtn.setPrefHeight(50);
-        giveUpBtn.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
+        giveUpBtn.setPrefHeight(44);
+        giveUpBtn.setStyle(GameStyles.bigButton());
+        giveUpBtn.setFocusTraversable(false);
 
-        VBox keyboard = buildLetterKeyboard();
+        KeyboardPane keyboard = buildLetterKeyboard();
 
-        VBox bottom = new VBox(10, keyboard, giveUpBtn, remaining, message);
+        HBox topActions = new HBox(12, backBtn);
+        topActions.setAlignment(Pos.CENTER);
+
+        HBox giveUpRow = new HBox(giveUpBtn);
+        giveUpRow.setAlignment(Pos.CENTER);
+
+        VBox bottom = new VBox(10, topActions, remaining, message, keyboard, giveUpRow);
         bottom.setAlignment(Pos.CENTER);
-        bottom.setPadding(new Insets(15));
+        bottom.setPadding(new Insets(14));
         setBottom(bottom);
 
-        backBtn.setOnAction(e -> nav.goToSettings(language, "Verticle"));
+        backBtn.setOnAction(_ -> nav.goToSettings(language, "Verticle"));
 
-        giveUpBtn.setOnAction(e -> showLose(backBtn, giveUpBtn, "You gave up."));
+        giveUpBtn.setOnAction(_ -> {
+            uiLocked = true;
+            showStandardLose(backBtn, giveUpBtn, "You gave up.");
+        });
 
-        Runnable submit = () -> {
+        this.enterAction = () -> {
+            if (uiLocked) {
+                return;
+            }
+
             if (game.isGameOver()) {
                 message.setText("Game over.");
                 return;
@@ -139,45 +196,56 @@ public class VerticleView extends BorderPane {
                 return;
             }
 
-            int col = r.tryIndex;
+            int col = r.getTryIndex();
 
-            // paint that column
             for (int row = 0; row < letters; row++) {
                 Label t = tiles[row][col];
-                t.setText(String.valueOf(r.guess.charAt(row)));
-                t.setStyle(baseStyle() + styleFor(r.tiles[row]));
+                char ch = r.getGuess().charAt(row);
 
-                promoteKey(r.guess.charAt(row), rankForVertTile(r.tiles[row]));
+                t.setText(String.valueOf(ch));
+                t.setStyle(GameStyles.tileBase() + styleFor(r.getTiles()[row]));
+
+                keyboardColors.promoteKey(ch, rankForVertTile(r.getTiles()[row]));
             }
 
-            remaining.setText("Guesses left: " + r.remainingGuesses);
+            remaining.setText("Guesses left: " + r.getRemainingGuesses());
             message.setText("");
 
-            // reset typing for next column
             typedIndex = 0;
-            for (int i = 0; i < letters; i++) current[i] = 0;
+            for (int i = 0; i < letters; i++) {
+                current[i] = 0;
+            }
 
-            // add next column if exists
-            if (!r.gameOver && col + 1 < chances) {
+            if (!r.isGameOver() && col + 1 < chances) {
                 addColumnToGrid(col + 1);
             }
 
-            if (r.gameWon) {
-                showWin(backBtn, giveUpBtn);
-            } else if (r.gameOver) {
-                showLose(backBtn, giveUpBtn, "Out of guesses.");
+            if (r.isGameWon()) {
+                uiLocked = true;
+                showStandardWin(backBtn, giveUpBtn, "Correct!");
+            } else if (r.isGameOver()) {
+                uiLocked = true;
+                showStandardLose(backBtn, giveUpBtn, "Out of guesses.");
             }
+
+            requestFocus();
         };
 
-        // Key handlers
-        this.enterAction = submit;
-
         setFocusTraversable(true);
+        setOnMousePressed(_ -> requestFocus());
+
         setOnKeyPressed(e -> {
-            if (game.isGameOver()) return;
+            if (uiLocked) {
+                return;
+            }
+            if (game.isGameOver()) {
+                return;
+            }
 
             if (e.getCode() == KeyCode.ENTER) {
-                submit.run();
+                if (enterAction != null) {
+                    enterAction.run();
+                }
                 return;
             }
             if (e.getCode() == KeyCode.BACK_SPACE) {
@@ -188,7 +256,9 @@ public class VerticleView extends BorderPane {
             String txt = e.getText();
             if (txt != null && txt.length() == 1) {
                 char ch = Character.toUpperCase(txt.charAt(0));
-                if (ch >= 'A' && ch <= 'Z') typeChar(ch);
+                if (ch >= 'A' && ch <= 'Z') {
+                    typeChar(ch);
+                }
             }
         });
 
@@ -199,176 +269,164 @@ public class VerticleView extends BorderPane {
         });
     }
 
-    // ----- Grid helpers -----
     private void addColumnToGrid(int col) {
         for (int r = 0; r < letters; r++) {
-            if (!grid.getChildren().contains(tiles[r][col])) {
-                grid.add(tiles[r][col], col, r);
-            }
+            grid.add(tiles[r][col], col, r);
         }
     }
 
-    // ----- typing goes DOWN the current column -----
     private void typeChar(char ch) {
-        if (game.isGameOver()) return;
+        if (uiLocked) {
+            return;
+        }
+        if (game.isGameOver()) {
+            return;
+        }
 
-        int col = game.getTries(); // current try column
-        if (col >= chances) return;
-        if (typedIndex >= letters) return;
+        int col = game.getTries();
+        if (col >= chances) {
+            return;
+        }
+        if (typedIndex >= letters) {
+            return;
+        }
 
         ch = Character.toUpperCase(ch);
         current[typedIndex] = ch;
 
-        tiles[typedIndex][col].setText(String.valueOf(ch));
+        Label t = tiles[typedIndex][col];
+        t.setText(String.valueOf(ch));
+        t.setStyle(GameStyles.tileBase() + GameStyles.tileEmpty());
+
         typedIndex++;
     }
 
     private void backspace() {
-        if (typedIndex <= 0) return;
+        if (uiLocked) {
+            return;
+        }
+        if (typedIndex <= 0) {
+            return;
+        }
 
         typedIndex--;
         current[typedIndex] = 0;
 
         int col = game.getTries();
-        tiles[typedIndex][col].setText(" ");
-    }
-
-    // ----- styles -----
-    private String baseStyle() {
-        return "-fx-border-color: #444; -fx-font-size: 22px; -fx-font-weight: bold; -fx-alignment: center;";
+        Label t = tiles[typedIndex][col];
+        t.setText(" ");
+        t.setStyle(GameStyles.tileBase() + GameStyles.tileEmpty());
     }
 
     private String styleFor(VerticleLogic.Tile tile) {
-        return switch (tile) {
-            case GREEN -> "-fx-background-color: #4CAF50; -fx-text-fill: white;";
-            case YELLOW -> "-fx-background-color: #C9B458; -fx-text-fill: white;";
-            default -> "-fx-background-color: #787C7E; -fx-text-fill: white;";
-        };
+        if (tile == VerticleLogic.Tile.GREEN) {
+            return GameStyles.tileGreen();
+        }
+        if (tile == VerticleLogic.Tile.YELLOW) {
+            return GameStyles.tileYellow();
+        }
+        return GameStyles.tileGrey();
     }
 
-    // ----- lose/win layouts -----
-    private void showLose(Button backBtn, Button giveUpBtn, String msg) {
+    private void showStandardWin(Button backBtn, Button giveUpBtn, String messageText) {
+        VBox content = new VBox(10);
+        content.setAlignment(Pos.CENTER);
+        content.setPadding(new Insets(20));
+
+        Label won = new Label("You win!");
+        won.setStyle(GameStyles.TITLE);
+        content.getChildren().add(won);
+
+        ScrollPane scroll = new ScrollPane(content);
+        scroll.setFitToWidth(true);
+        scroll.setPannable(true);
+        scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        setCenter(scroll);
+
+        message.setStyle(GameStyles.MSG_GREEN);
+        message.setText(messageText);
+
+        giveUpBtn.setVisible(false);
+        giveUpBtn.setManaged(false);
+        backBtn.setVisible(true);
+        backBtn.setManaged(true);
+
+        requestFocus();
+    }
+
+    private void showStandardLose(Button backBtn, Button giveUpBtn, String msg) {
+        VBox content = new VBox(10);
+        content.setAlignment(Pos.CENTER);
+        content.setPadding(new Insets(20));
+
         Label lost = new Label("You lost. The word was:");
-        lost.setStyle("-fx-font-size: 36px;");
+        lost.setStyle("-fx-font-size: 30px; -fx-font-weight: bold;");
+        content.getChildren().add(lost);
 
         Label answer = new Label(game.getWord());
-        answer.setStyle("-fx-font-size: 28px; -fx-font-weight: bold;");
+        answer.setStyle("-fx-font-size: 22px; -fx-font-weight: bold;");
+        content.getChildren().add(answer);
 
-        VBox losing = new VBox(15, lost, answer);
-        losing.setAlignment(Pos.CENTER);
-        losing.setPadding(new Insets(20));
+        ScrollPane scroll = new ScrollPane(content);
+        scroll.setFitToWidth(true);
+        scroll.setPannable(true);
+        scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        setCenter(scroll);
 
-        setCenter(losing);
-
+        message.setStyle(GameStyles.MSG_RED);
         message.setText(msg);
-        giveUpBtn.setVisible(false);
-        giveUpBtn.setManaged(false);
-        backBtn.setVisible(true);
-        backBtn.setManaged(true);
-
-        VBox bottom = (VBox) getBottom();
-        if (!bottom.getChildren().contains(backBtn)) {
-            bottom.getChildren().add(1, backBtn);
-        }
-    }
-
-    private void showWin(Button backBtn, Button giveUpBtn) {
-        Label won = new Label("You win!");
-        won.setStyle("-fx-font-size: 48px; -fx-font-weight: bold;");
-        setCenter(won);
-
-        message.setStyle("-fx-text-fill: green; -fx-font-size: 16px;");
-        message.setText("Correct!");
 
         giveUpBtn.setVisible(false);
         giveUpBtn.setManaged(false);
         backBtn.setVisible(true);
         backBtn.setManaged(true);
 
-        VBox bottom = (VBox) getBottom();
-        if (!bottom.getChildren().contains(backBtn)) {
-            bottom.getChildren().add(1, backBtn);
-        }
+        requestFocus();
     }
 
-    // ----- Keyboard (smaller) -----
-    private VBox buildLetterKeyboard() {
-        String[] r1 = {"Q","W","E","R","T","Z","U","I","O","P"};
-        String[] r2 = {"A","S","D","F","G","H","J","K","L"};
-        String[] r3 = {"ENTER","Y","X","C","V","B","N","M","⌫"};
+    private KeyboardPane buildLetterKeyboard() {
+        String[][] rows = {
+                {"Q", "W", "E", "R", "T", "Z", "U", "I", "O", "P"},
+                {"A", "S", "D", "F", "G", "H", "J", "K", "L"},
+                {"ENTER", "Y", "X", "C", "V", "B", "N", "M", "⌫"}
+        };
 
-        VBox kb = new VBox(6,
-                keyboardRow(r1),
-                keyboardRow(r2),
-                keyboardRow(r3)
+        KeyboardPane.KeySizing sizing = new KeyboardPane.KeySizing(
+                42, 50, 120, 70,
+                8, 8,
+                new Insets(6, 0, 0, 0)
         );
-        kb.setAlignment(Pos.CENTER);
-        kb.setPadding(new Insets(5, 0, 0, 0));
-        return kb;
+
+        KeyboardPane.Handlers handlers = new KeyboardPane.Handlers(
+                () -> {
+                    if (enterAction != null) {
+                        enterAction.run();
+                    }
+                },
+                this::backspace,
+                this::typeChar,
+                this::requestFocus
+        );
+
+        return new KeyboardPane(
+                rows,
+                sizing,
+                _ -> GameStyles.keyBase(),
+                keyboardColors,
+                handlers
+        );
     }
 
-    private HBox keyboardRow(String[] keys) {
-        HBox row = new HBox(6);
-        row.setAlignment(Pos.CENTER);
 
-        for (String k : keys) {
-            Button b = new Button(k);
-            b.setPrefHeight(40);
-            if (k.equals("ENTER")) b.setPrefWidth(110);
-            else if (k.equals("⌫")) b.setPrefWidth(70);
-            else b.setPrefWidth(44);
-
-            b.setStyle("-fx-font-size: 14px; -fx-font-weight: bold;");
-
-            if (k.length() == 1) {
-                char ch = k.charAt(0);
-                keyButtons.put(ch, b);
-                keyRank.put(ch, 0);
-            }
-
-            b.setOnAction(e -> {
-                if (k.equals("ENTER")) {
-                    if (enterAction != null) enterAction.run();
-                } else if (k.equals("⌫")) {
-                    backspace();
-                } else {
-                    typeChar(k.charAt(0));
-                }
-            });
-
-            row.getChildren().add(b);
-        }
-        return row;
-    }
-
-    // ----- Keyboard coloring -----
     private int rankForVertTile(VerticleLogic.Tile t) {
-        return switch (t) {
-            case GREY -> 1;
-            case YELLOW -> 2;
-            case GREEN -> 3;
-        };
-    }
-
-    private void promoteKey(char ch, int newRank) {
-        ch = Character.toUpperCase(ch);
-        Button b = keyButtons.get(ch);
-        if (b == null) return;
-
-        int old = keyRank.getOrDefault(ch, 0);
-        if (newRank > old) {
-            keyRank.put(ch, newRank);
-            b.setStyle(styleForRank(newRank));
+        if (t == VerticleLogic.Tile.GREY) {
+            return 1;
         }
-    }
-
-    private String styleForRank(int rank) {
-        String base = "-fx-font-size: 14px; -fx-font-weight: bold;";
-        return switch (rank) {
-            case 1 -> base + "-fx-background-color: #787C7E; -fx-text-fill: white;";
-            case 2 -> base + "-fx-background-color: #C9B458; -fx-text-fill: white;";
-            case 3 -> base + "-fx-background-color: #4CAF50; -fx-text-fill: white;";
-            default -> base;
-        };
+        if (t == VerticleLogic.Tile.YELLOW) {
+            return 2;
+        }
+        return 3;
     }
 }
