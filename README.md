@@ -101,6 +101,9 @@ The game modes used on my programm and researched about them were based on alrea
 - For the dictionairies, Chromium was used: https://chromium.googlesource.com/chromium/deps/hunspell/%2B/9f292621c01a6708cd35416c4482ba5d6881186f/dictionaries?
 - For the libraries, this repo was used: https://github.com/LibreOffice/dictionaries
 
+#### JavaFX
+- The SDK for JavaFX was downloaded from here: https://gluonhq.com/products/javafx/
+
 ### Opensource AI
 For guiding methods and correction purposes, Chatgpt was used.
 
