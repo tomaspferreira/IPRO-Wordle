@@ -51,7 +51,9 @@ run(Windows).bat → One-click launcher
 ### Platform Notes
 
 Currently, only Windows is supported for playing via run(Windows).bat
+
 JavaFX native binaries are Windows-only
+
 macOS/Linux would require additional JavaFX native binaries
 
 ## Usage
