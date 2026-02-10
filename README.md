@@ -3,25 +3,56 @@
 ## Description
 Wordle is a word game where the player has to guess a mystery word. The mystery word is predefined by the number of letters and how many there are, as well as how many guesses the player has to guess it. After each player guess, the game shows which letters coincide with the mystery word. If the letter is in the correct spot, it will turn green. If the a letter exists in the mystery word but it is in the wrong spot, it will turn yellow. Otherwise, it will be greyed out. The game ends when the player guesses the word or they run out of guesses.
 
-## How to play
-On IntelliJ:
-  - Clone repo
-  - Set Project SDK = JDK 25
-  - Run configuration:
-    - Main class: Clusterle
-    - Working directory: project root (the folder that contains resources, lib, etc.)
-    - VM options (Copy exactly as written below):
-    
-          --module-path
-          lib
-          --add-modules
-          javafx.controls,javafx.graphics,javafx.base
-          --enable-native-access=javafx.graphics
-          --enable-native-access=ALL-UNNAMED
-          -Djava.library.path=javafx-bin
-      
+## How to run the game (Windows)
 
-At this point in development, unless IntelliJ is using Gradle or Maven, only Windows users are able to play the game as the JavaFX bin folder only includes the files for Windows.
+Requirements:
+- Windows
+- JDK installed (recommended: Temurin JDK 21 or 25)
+  - After installing, java -version and javac -version should work in Command Prompt
+
+How to run:
+-Clone the repository
+- Double-click:
+  - run(Windows).bat
+
+The script compiles, loads JavaFX, native libraries, resources, and starts the game automatically.
+
+### Development Setup (IntelliJ)
+Only needed if you want to modify or debug the code.
+
+IntelliJ setup:
+- Clone the repo
+- Open project in IntelliJ
+- Set Project SDK to JDK 25
+- Create a Run Configuration:
+  - Main class: Clusterle
+  - Working directory: project root (the folder containing resources, lib, etc.)
+  - VM options (copy exactly):
+  
+        --module-path lib
+        --add-modules javafx.controls,javafx.graphics,javafx.base
+        --enable-native-access=javafx.graphics
+        --enable-native-access=ALL-UNNAMED
+        -Djava.library.path=javafx-bin
+
+- Run from IntelliJ.
+
+### Project Structure (important folders)
+src/            → Java source code
+
+resources/      → Game resources (CSS, words, Hunspell dictionaries)
+
+lib/            → JavaFX + external libraries (JARs)
+
+javafx-bin/     → JavaFX native DLLs (Windows)
+
+run(Windows).bat → One-click launcher
+
+### Platform Notes
+
+Currently, only Windows is supported for playing via run(Windows).bat
+JavaFX native binaries are Windows-only
+macOS/Linux would require additional JavaFX native binaries
 
 ## Usage
 Self-made wordle is based on the popular online game by New York Times called "Wordle". In contrast to "Wordle" there are three other game modes Self-made Wordle includes, them being Verticle, Xordle and Nerdle. Links for the original games are all found below.
