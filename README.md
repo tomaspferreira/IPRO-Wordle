@@ -12,9 +12,13 @@ On IntelliJ:
     - Working directory: project root (the folder that contains resources, lib, etc.)
     - VM options (Copy exactly as written below):
     
-          --module-path lib --add-modules javafx.controls,javafx.fxml,javafx.graphics,javafx.base,javafx.media,javafx.web,javafx.swing
+          --module-path
+          lib
+          --add-modules
+          javafx.controls,javafx.graphics,javafx.base
+          --enable-native-access=javafx.graphics
+          --enable-native-access=ALL-UNNAMED
           -Djava.library.path=javafx-bin
-          -Djna.library.path=win32-x86-64
       
 
 At this point in development, unless IntelliJ is using Gradle or Maven, only Windows users are able to play the game as the JavaFX bin folder only includes the files for Windows.
