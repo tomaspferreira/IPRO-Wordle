@@ -20,8 +20,15 @@ public class Settings extends VBox {
 
         ComboBox<Integer> lettersBox = new ComboBox<>();
         lettersBox.setStyle("-fx-font-size: 24px;");
-        lettersBox.getItems().addAll(4, 5, 6, 7);
+
+        if ("de".equals(language)) {
+            lettersBox.getItems().addAll(4, 5);
+        } else {
+            lettersBox.getItems().addAll(4, 5, 6, 7);
+        }
+
         lettersBox.setValue(5);
+
 
         // --- WORDLE extra setting ---
         Label wordsLabel = new Label("How many words do you want to guess?");

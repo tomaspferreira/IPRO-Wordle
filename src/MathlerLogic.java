@@ -63,6 +63,93 @@ public class MathlerLogic {
             return gameOver;
         }
     }
+    // Deterministic constructor for unit tests (no randomness).
+    MathlerLogic(String fixedEquation) {
+        if (fixedEquation == null) {
+            throw new IllegalArgumentException("Equation must not be null.");
+        }
+
+        String eq = fixedEquation.trim();
+        if (eq.isEmpty()) {
+            throw new IllegalArgumentException("Equation must not be empty.");
+        }
+
+        // validate allowed chars
+        for (int i = 0; i < eq.length(); i++) {
+            char ch = eq.charAt(i);
+            boolean ok = (ch >= '0' && ch <= '9')
+                    || ch == '+'
+                    || ch == '-'
+                    || ch == '*'
+                    || ch == '/';
+            if (!ok) {
+                throw new IllegalArgumentException("Only digits and + - * / allowed.");
+            }
+        }
+
+        this.equation = eq;
+        this.target = evalSimpleExpression(eq);  // computes target with your precedence
+        this.chances = equation.length() + 2;
+    }
+
+    private static int evalSimpleExpression(String expr) {
+        // Same precedence logic you already use in the random constructor:
+        // first fold */ then apply +-
+        // This assumes expr is a valid sequence of numbers/operators without parentheses.
+        // (Good enough for unit tests, since you control the input.)
+        java.util.ArrayList<Integer> nums = new java.util.ArrayList<>();
+        java.util.ArrayList<Character> ops = new java.util.ArrayList<>();
+
+        int i = 0;
+        while (i < expr.length()) {
+            // parse number (can be multi-digit)
+            int val = 0;
+            boolean hasDigit = false;
+            while (i < expr.length() && Character.isDigit(expr.charAt(i))) {
+                hasDigit = true;
+                val = val * 10 + (expr.charAt(i) - '0');
+                i++;
+            }
+            if (!hasDigit) {
+                throw new IllegalArgumentException("Invalid equation format.");
+            }
+            nums.add(val);
+
+            if (i < expr.length()) {
+                char op = expr.charAt(i);
+                ops.add(op);
+                i++;
+            }
+        }
+
+        // fold */ into nums2/ops2
+        java.util.ArrayList<Integer> nums2 = new java.util.ArrayList<>();
+        java.util.ArrayList<Character> ops2 = new java.util.ArrayList<>();
+        nums2.add(nums.getFirst());
+
+        for (int k = 0; k < ops.size(); k++) {
+            char op = ops.get(k);
+            int right = nums.get(k + 1);
+
+            if (op == '*' || op == '/') {
+                int left = nums2.getLast();
+                int folded = (op == '*') ? (left * right) : (left / right);
+                nums2.set(nums2.size() - 1, folded);
+            } else {
+                ops2.add(op);
+                nums2.add(right);
+            }
+        }
+
+        int result = nums2.getFirst();
+        for (int k = 0; k < ops2.size(); k++) {
+            char op = ops2.get(k);
+            int right = nums2.get(k + 1);
+            result = (op == '+') ? (result + right) : (result - right);
+        }
+        return result;
+    }
+
 
     /** Target value of the secret expression. */
     private final int target;

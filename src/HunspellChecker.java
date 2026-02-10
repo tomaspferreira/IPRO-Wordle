@@ -34,7 +34,7 @@ public final class HunspellChecker {
             affPath = base + "en_US.aff";
         }
 
-        // AFF first, then DIC (this fixes the 'the'/'and'/'house' false problem)
+        // DIC first, then AFF (this fixes the 'the'/'and'/'house' false problem)
         hunspell = new Hunspell(dicPath, affPath);
     }
 

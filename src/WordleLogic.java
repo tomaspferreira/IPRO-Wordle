@@ -70,6 +70,35 @@ public class WordleLogic {
         }
     }
 
+    // Deterministic constructor for unit tests (no Language, no randomness).
+    WordleLogic(String... fixedWords) {
+        if (fixedWords == null || fixedWords.length == 0) {
+            throw new IllegalArgumentException("At least one word required.");
+        }
+
+        int len = fixedWords[0].length();
+        for (String w : fixedWords) {
+            if (w == null || w.length() != len) {
+                throw new IllegalArgumentException("All words must have same length.");
+            }
+        }
+
+        this.wordsCount = fixedWords.length;
+        this.letters = len;
+
+        this.words = new String[wordsCount];
+        this.solved = new boolean[wordsCount];
+
+        for (int i = 0; i < wordsCount; i++) {
+            this.words[i] = fixedWords[i].toUpperCase();
+            this.solved[i] = false;
+        }
+
+        this.chances = wordsCount + 4;
+        this.tries = 0;
+    }
+
+
     /** Number of secret words to solve. */
     private final int wordsCount;
 

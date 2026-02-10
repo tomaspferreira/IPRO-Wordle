@@ -91,6 +91,23 @@ public class XordleLogic {
         }
     }
 
+    // Deterministic constructor for unit tests (no Language, no randomness).
+    XordleLogic(String word1, String word2) {
+        if (word1 == null || word2 == null) {
+            throw new IllegalArgumentException("Words must not be null.");
+        }
+        if (word1.length() != word2.length()) {
+            throw new IllegalArgumentException("Words must have same length.");
+        }
+
+        this.letters = word1.length();
+        this.words = new String[]{word1.toUpperCase(), word2.toUpperCase()};
+        this.solved = new boolean[]{false, false};
+        this.chances = letters + 4;
+        this.tries = 0;
+    }
+
+
     /** Number of letters per word. */
     private final int letters;
 

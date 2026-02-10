@@ -69,6 +69,22 @@ public class VerticleLogic {
             return gameOver;
         }
     }
+    // Deterministic constructor for unit tests (no Language, no randomness).
+    VerticleLogic(String fixedWord) {
+        if (fixedWord == null) {
+            throw new IllegalArgumentException("Word must not be null.");
+        }
+        String w = fixedWord.trim();
+        if (w.isEmpty()) {
+            throw new IllegalArgumentException("Word must not be empty.");
+        }
+
+        this.letters = w.length();
+        this.lang = null; // not used in this constructor
+        this.word = w.toUpperCase();
+        this.chances = letters;
+    }
+
 
     /** Number of letters in the secret word. */
     private final int letters;
