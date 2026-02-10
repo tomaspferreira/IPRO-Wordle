@@ -4,8 +4,20 @@
 Wordle is a word game where the player has to guess a mystery word. The mystery word is predefined by the number of letters and how many there are, as well as how many guesses the player has to guess it. After each player guess, the game shows which letters coincide with the mystery word. If the letter is in the correct spot, it will turn green. If the a letter exists in the mystery word but it is in the wrong spot, it will turn yellow. Otherwise, it will be greyed out. The game ends when the player guesses the word or they run out of guesses.
 
 ## How to play
+On IntelliJ:
+  - Clone repo
+  - Set Project SDK = JDK 25
+  - Run configuration:
+    - Main class: Clusterle
+    - Working directory: project root (the folder that contains resources, lib, etc.)
+    - VM options (Copy exactly as written below):
+    
+          --module-path lib --add-modules javafx.controls,javafx.fxml,javafx.graphics,javafx.base,javafx.media,javafx.web,javafx.swing
+          -Djava.library.path=javafx-bin
+          -Djna.library.path=win32-x86-64
+      
+
 At this point in developmet, unless IntelliJ is using Gradle or Maven, only Windows users are able to play the game as the JavaFX bin folder only includes the files for Windows.
-To start the game, just runthe run(Windows).bat file.
 
 ## Usage
 Self-made wordle is based on the popular online game by New York Times called "Wordle". In contrast to "Wordle" there are three other game modes Self-made Wordle includes, them being Verticle, Xordle and Nerdle. Links for the original games are all found below.
