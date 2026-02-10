@@ -17,7 +17,7 @@ On IntelliJ:
           -Djna.library.path=win32-x86-64
       
 
-At this point in developmet, unless IntelliJ is using Gradle or Maven, only Windows users are able to play the game as the JavaFX bin folder only includes the files for Windows.
+At this point in development, unless IntelliJ is using Gradle or Maven, only Windows users are able to play the game as the JavaFX bin folder only includes the files for Windows.
 
 ## Usage
 Self-made wordle is based on the popular online game by New York Times called "Wordle". In contrast to "Wordle" there are three other game modes Self-made Wordle includes, them being Verticle, Xordle and Nerdle. Links for the original games are all found below.
