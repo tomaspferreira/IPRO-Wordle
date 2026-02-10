@@ -1,6 +1,8 @@
 # Clusterle
 
 ## Description
+Clusterle is a collection of four word play games: Wordle, Xordle, Verticle and Mathler. All four are based on the popular "New York Timas" game Wordle.
+
 Wordle is a word game where the player has to guess a mystery word. The mystery word is predefined by the number of letters and how many there are, as well as how many guesses the player has to guess it. After each player guess, the game shows which letters coincide with the mystery word. If the letter is in the correct spot, it will turn green. If the a letter exists in the mystery word but it is in the wrong spot, it will turn yellow. Otherwise, it will be greyed out. The game ends when the player guesses the word or they run out of guesses.
 
 ## How to run the game (Windows)
@@ -51,7 +53,9 @@ run(Windows).bat → One-click launcher
 ### Platform Notes
 
 Currently, only Windows is supported for playing via run(Windows).bat
+
 JavaFX native binaries are Windows-only
+
 macOS/Linux would require additional JavaFX native binaries
 
 ## Usage
@@ -98,6 +102,12 @@ The game modes used on my programm and researched about them were based on alrea
 - For the German wordlist, this website was used: https://www.wort-suchen.de/woerterbuch/
 - For the dictionairies, Chromium was used: https://chromium.googlesource.com/chromium/deps/hunspell/%2B/9f292621c01a6708cd35416c4482ba5d6881186f/dictionaries?
 - For the libraries, this repo was used: https://github.com/LibreOffice/dictionaries
+
+#### JavaFX
+- The SDK for JavaFX was downloaded from here: https://gluonhq.com/products/javafx/
+
+#### JUnit tests
+- For the JUnit tests, the download link for the .jar file was taken from this maven repository: https://mvnrepository.com/artifact/org.junit.platform/junit-platform-console-standalone/1.14.2
 
 ### Opensource AI
 For guiding methods and correction purposes, Chatgpt was used.
