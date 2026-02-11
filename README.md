@@ -13,7 +13,9 @@ Requirements:
   - After installing, java -version and javac -version should work in Command Prompt
 
 How to run:
--Clone the repository
+
+- Clone the repository
+
 - Double-click:
   - run(Windows).bat
 
