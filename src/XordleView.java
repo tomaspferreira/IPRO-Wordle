@@ -12,49 +12,79 @@ import javafx.scene.layout.VBox;
 
 public class XordleView extends BorderPane {
 
-    /** Navigator used to switch screens. */
+    /**
+     * Navigator used to switch screens.
+     */
     private final Navigator nav;
 
-    /** Language code (e.g., "en", "de"). */
+    /**
+     * Language code (e.g., "en", "de").
+     */
     private final String language;
 
-    /** Game logic instance. */
+    /**
+     * Game logic instance.
+     */
     private final XordleLogic game;
 
-    /** Number of letters per guess. */
+    /**
+     * Number of letters per guess.
+     */
     private final int letters;
 
-    /** Number of allowed guesses. */
+    /**
+     * Number of allowed guesses.
+     */
     private final int chances;
 
-    /** Current row (guess index). */
+    /**
+     * Current row (guess index).
+     */
     private int rowIndex;
 
-    /** Current column (typed letters in this row). */
+    /**
+     * Current column (typed letters in this row).
+     */
     private int colIndex;
 
-    /** Current typed letters. */
+    /**
+     * Current typed letters.
+     */
     private final char[] current;
 
-    /** Status / error message label. */
+    /**
+     * Status / error message label.
+     */
     private final Label message;
 
-    /** Remaining guesses label. */
+    /**
+     * Remaining guesses label.
+     */
     private final Label remaining;
 
-    /** Board grid. */
+    /**
+     * Board grid.
+     */
     private final GridPane grid;
 
-    /** Tile labels indexed by [row][col]. */
+    /**
+     * Tile labels indexed by [row][col].
+     */
     private final Label[][] tiles;
 
-    /** Shared keyboard coloring (never downgrade). */
+    /**
+     * Shared keyboard coloring (never downgrade).
+     */
     private final KeyboardColorManager keyboardColors;
 
-    /** Enter action (submit). */
+    /**
+     * Enter action (submit).
+     */
     private Runnable enterAction;
 
-    /** When true, UI ignores input. */
+    /**
+     * When true, UI ignores input.
+     */
     private boolean uiLocked;
 
     public XordleView(Navigator navigator, String languageValue, int lettersValue) {
@@ -136,7 +166,7 @@ public class XordleView extends BorderPane {
         Button backBtn = new Button("Back");
         backBtn.setPrefWidth(140);
         backBtn.setPrefHeight(44);
-        backBtn.setStyle(GameStyles.bigButton());
+        backBtn.getStyleClass().add("big");
         backBtn.setFocusTraversable(false);
         backBtn.setVisible(false);
         backBtn.setManaged(false);
@@ -144,7 +174,7 @@ public class XordleView extends BorderPane {
         Button giveUpBtn = new Button("Give up");
         giveUpBtn.setPrefWidth(160);
         giveUpBtn.setPrefHeight(44);
-        giveUpBtn.setStyle(GameStyles.bigButton());
+        giveUpBtn.getStyleClass().add("big");
         giveUpBtn.setFocusTraversable(false);
 
         KeyboardPane keyboard = buildLetterKeyboard();
@@ -172,7 +202,10 @@ public class XordleView extends BorderPane {
         setFocusTraversable(true);
         setOnMousePressed(_ -> requestFocus());
 
+        // ----- Physical keyboard input handler (ENTER / BACKSPACE / A-Z typing) -----
         setOnKeyPressed(e -> {
+
+            // Ignore input after the game ends or after Give Up / win / loss screens
             if (uiLocked) {
                 return;
             }
@@ -180,6 +213,7 @@ public class XordleView extends BorderPane {
                 return;
             }
 
+            // ENTER submits the current guess
             if (e.getCode() == KeyCode.ENTER) {
                 if (enterAction != null) {
                     enterAction.run();
@@ -187,11 +221,13 @@ public class XordleView extends BorderPane {
                 return;
             }
 
+            // BACKSPACE deletes the last typed letter
             if (e.getCode() == KeyCode.BACK_SPACE) {
                 backspace();
                 return;
             }
 
+            // Any single typed character: accept only A-Z and add it to the row
             String txt = e.getText();
             if (txt != null && txt.length() == 1) {
                 char ch = Character.toUpperCase(txt.charAt(0));
@@ -202,33 +238,44 @@ public class XordleView extends BorderPane {
         });
     }
 
+    /**
+     * Submits the current row as a guess:
+     * validates input, checks dictionary, calls XordleLogic, paints the row,
+     * updates messages/counters, and handles win/lose or moves to next row.
+     */
     private void submit(Button backBtn, Button giveUpBtn) {
         if (uiLocked) {
             return;
         }
 
+        // ----- Basic game state checks -----
         if (game.isGameOver()) {
             message.setText("Game over.");
             return;
         }
 
+        // ----- Bounds checks for guesses -----
         if (rowIndex >= chances) {
             message.setText("No guesses left.");
             return;
         }
 
+        // ----- Must type a full word before submitting -----
         if (colIndex < letters) {
             message.setText("Not enough letters.");
             return;
         }
 
+        // Build guess string from typed characters
         String guess = new String(current);
 
+        // ----- Dictionary validation (Hunspell) -----
         if (!HunspellChecker.isValidWord(guess)) {
             message.setText("Not a valid word.");
             return;
         }
 
+        // ----- Submit to logic (may throw if invalid) -----
         XordleLogic.TurnResult result;
         try {
             result = game.submitGuess(guess);
@@ -237,11 +284,16 @@ public class XordleView extends BorderPane {
             return;
         }
 
+        // ----- Paint tiles for this row + update keyboard colors -----
         paintRow(result);
+
+        // Update remaining guesses label
         remaining.setText("Guesses left: " + result.getRemainingGuesses());
 
+        // Show “Word 1 solved!” / “Word 2 solved!” feedback if it happened this turn
         setSolvedMessage(result);
 
+        // ----- Endgame handling -----
         if (result.isGameWon()) {
             uiLocked = true;
             showStandardWin(backBtn, giveUpBtn, "Solved both words!");
@@ -254,10 +306,15 @@ public class XordleView extends BorderPane {
             return;
         }
 
+        // ----- Continue to next row -----
         moveToNextRow();
         requestFocus();
     }
 
+    /**
+     * Paints the current row using the tile colors returned by XordleLogic.
+     * Also promotes keyboard colors so keys never downgrade.
+     */
     private void paintRow(XordleLogic.TurnResult result) {
         String guess = result.getGuess();
         XordleLogic.Tile[] rowTiles = result.getTiles();
@@ -269,10 +326,15 @@ public class XordleView extends BorderPane {
             t.setText(String.valueOf(ch));
             t.setStyle(GameStyles.tileBase() + styleFor(rowTiles[c]));
 
+            // Promote keyboard key color based on strongest information seen so far
             keyboardColors.promoteKey(ch, rankForXordleTile(rowTiles[c]));
         }
     }
 
+    /**
+     * Shows a short status message if one or both secret words were solved
+     * on this specific turn; otherwise clears the message.
+     */
     private void setSolvedMessage(XordleLogic.TurnResult result) {
         boolean[] newly = result.getNewlySolved();
 
@@ -292,25 +354,38 @@ public class XordleView extends BorderPane {
         message.setText("");
     }
 
+    /**
+     * Advances to the next guess row:
+     * resets typing state and adds the next row of tiles to the grid if needed.
+     */
     private void moveToNextRow() {
         rowIndex++;
         colIndex = 0;
 
+        // Clear the current typed buffer
         for (int i = 0; i < letters; i++) {
             current[i] = 0;
         }
 
+        // Reveal/build next row in the grid
         if (rowIndex < chances) {
             addRowToGrid(rowIndex);
         }
     }
 
+    /**
+     * Adds one row of tile Labels to the GridPane at the given row index.
+     */
     private void addRowToGrid(int row) {
         for (int c = 0; c < letters; c++) {
             grid.add(tiles[row][c], c, row);
         }
     }
 
+    /**
+     * Types a character into the current row (if there is space),
+     * updates the visible tile, and advances the column cursor.
+     */
     private void typeChar(char ch) {
         if (uiLocked) {
             return;
@@ -335,6 +410,9 @@ public class XordleView extends BorderPane {
         colIndex++;
     }
 
+    /**
+     * Removes the last typed character from the current row and clears that tile.
+     */
     private void backspace() {
         if (uiLocked) {
             return;
@@ -354,6 +432,9 @@ public class XordleView extends BorderPane {
         t.setStyle(GameStyles.tileBase() + GameStyles.tileEmpty());
     }
 
+    /**
+     * Maps an Xordle tile to a CSS style string for the board.
+     */
     private String styleFor(XordleLogic.Tile tile) {
         if (tile == XordleLogic.Tile.BLUE) {
             return GameStyles.tileBlue();
@@ -366,6 +447,10 @@ public class XordleView extends BorderPane {
         }
     }
 
+    /**
+     * Displays a standard win screen in the center, updates message styling,
+     * and switches button visibility (hide Give up, show Back).
+     */
     private void showStandardWin(Button backBtn, Button giveUpBtn, String messageText) {
         VBox content = new VBox(10);
         content.setAlignment(Pos.CENTER);
@@ -393,6 +478,10 @@ public class XordleView extends BorderPane {
         requestFocus();
     }
 
+    /**
+     * Displays a standard lose screen in the center (including both secret words),
+     * updates message styling, and switches button visibility.
+     */
     private void showStandardLose(Button backBtn, Button giveUpBtn, String msg) {
         VBox content = new VBox(10);
         content.setAlignment(Pos.CENTER);
@@ -427,6 +516,11 @@ public class XordleView extends BorderPane {
         requestFocus();
     }
 
+    /**
+     * Builds the on-screen QWERTZ keyboard and connects it to:
+     * ENTER -> submit, ⌫ -> backspace, letters -> typeChar.
+     * Also registers keys with KeyboardColorManager so they can be recolored.
+     */
     private KeyboardPane buildLetterKeyboard() {
         String[][] rows = {
                 {"Q", "W", "E", "R", "T", "Z", "U", "I", "O", "P"},
@@ -460,7 +554,10 @@ public class XordleView extends BorderPane {
         );
     }
 
-
+    /**
+     * Converts an Xordle tile into a keyboard "rank" so keys never downgrade:
+     * GREY=1, YELLOW=2, GREEN=3, BLUE=4.
+     */
     private int rankForXordleTile(XordleLogic.Tile tile) {
         if (tile == XordleLogic.Tile.GREY) {
             return 1;

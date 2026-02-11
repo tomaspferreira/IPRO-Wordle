@@ -175,7 +175,14 @@ public class XordleLogic {
         return isGameWon() || tries >= chances;
     }
 
+    /**
+     * Submits a guess for Xordle.
+     * Scores the guess against both secret words and combines the results
+     * into a single tile row using Xordle color rules.
+     */
     public TurnResult submitGuess(String guessRaw) {
+
+        // ----- If game is already finished, return safe "empty" result -----
         if (isGameOver()) {
             Tile[] empty = new Tile[letters];
             for (int i = 0; i < letters; i++) {
@@ -196,33 +203,46 @@ public class XordleLogic {
             );
         }
 
+        // ----- Normalize and validate guess -----
         String guess = guessRaw.trim().toUpperCase();
         if (guess.length() != letters) {
             throw new IllegalArgumentException("Guess must be " + letters + " letters.");
         }
 
+        // ----- Store solved state BEFORE applying this guess -----
         boolean[] wasSolved = getSolved();
 
+        // ----- Consume one attempt -----
         tries++;
 
+        // ----- Mark words solved if guess exactly matches -----
         for (int w = 0; w < 2; w++) {
             if (!solved[w] && guess.equals(words[w])) {
                 solved[w] = true;
             }
         }
 
+        // ----- Determine which words became solved on THIS turn -----
         boolean[] nowSolved = getSolved();
         boolean[] newlySolved = new boolean[2];
         newlySolved[0] = !wasSolved[0] && nowSolved[0];
         newlySolved[1] = !wasSolved[1] && nowSolved[1];
 
+        // ----- Score guess against each secret word independently -----
         int[] s1 = scoreWordle(words[0], guess);
         int[] s2 = scoreWordle(words[1], guess);
 
+        // ----- Combine both scores into Xordle tiles -----
         Tile[] out = new Tile[letters];
         for (int i = 0; i < letters; i++) {
+
+            // Blue = correct letter in both words at this position
             boolean bothGreen = (s1[i] == 2 && s2[i] == 2);
+
+            // Green = correct in exactly one word
             boolean oneGreen = (s1[i] == 2) ^ (s2[i] == 2);
+
+            // Yellow = appears somewhere in at least one word
             boolean anyYellow = (s1[i] == 1 || s2[i] == 1);
 
             if (bothGreen) {
@@ -236,6 +256,7 @@ public class XordleLogic {
             }
         }
 
+        // ----- Return turn result snapshot -----
         return new TurnResult(
                 guess,
                 out,
@@ -247,29 +268,50 @@ public class XordleLogic {
         );
     }
 
+
+    /**
+     * Standard Wordle scoring algorithm.
+     * Returns an int array:
+     * 2 = green (correct letter + position)
+     * 1 = yellow (letter exists elsewhere)
+     * 0 = grey (letter absent)
+     * Uses two-pass scoring to correctly handle duplicate letters.
+     */
     private static int[] scoreWordle(String word, String guess) {
+
         int n = word.length();
         int[] status = new int[n];
+
+        // Copy of target word letters used to track remaining matches
         char[] remaining = word.toCharArray();
+
+        // Tracks which positions are already green
         boolean[] green = new boolean[n];
 
+        // ----- Pass 1: mark greens and remove them from remaining pool -----
         for (int i = 0; i < n; i++) {
             if (guess.charAt(i) == word.charAt(i)) {
                 status[i] = 2;
                 green[i] = true;
-                remaining[i] = 0;
+                remaining[i] = 0; // consume letter
             }
         }
 
+        // ----- Pass 2: mark yellows using remaining unmatched letters -----
         for (int i = 0; i < n; i++) {
+
+            // Skip positions already green
             if (green[i]) {
                 continue;
             }
+
             char c = guess.charAt(i);
+
+            // Check if letter still exists somewhere unused
             for (int j = 0; j < n; j++) {
                 if (remaining[j] == c) {
                     status[i] = 1;
-                    remaining[j] = 0;
+                    remaining[j] = 0; // consume letter
                     break;
                 }
             }

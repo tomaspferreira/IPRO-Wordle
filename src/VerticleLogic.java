@@ -142,7 +142,18 @@ public class VerticleLogic {
         return solved || tries >= chances;
     }
 
+    /**
+     * Submits one guess for Verticle.
+     * Verticle twist:
+     * - On try #0 you are trying to match the secret word's letter at position 0,
+     * - on try #1 you are trying to match the letter at position 1,
+     * - etc.
+     * So each column/try has ONE special "target letter" = word.charAt(thisTry).
+     * This method returns a Tile per row (per character in the guess).
+     */
     public TurnResult submitGuess(String guessRaw) {
+
+        // ----- If the game already ended, return a safe "empty" result -----
         if (isGameOver()) {
             Tile[] empty = new Tile[letters];
             for (int i = 0; i < letters; i++) {
@@ -151,15 +162,19 @@ public class VerticleLogic {
             return new TurnResult("", empty, tries, 0, isGameWon(), true);
         }
 
+        // ----- Normalize input (trim + uppercase) -----
         String guess = guessRaw.trim().toUpperCase();
 
+        // ----- Validate guess length -----
         if (guess.length() != letters) {
             throw new IllegalArgumentException("Guess must be " + letters + " letters.");
         }
 
+        // ----- Store which try/column this guess belongs to, then consume it -----
         int thisTry = tries;
         tries++;
 
+        // ----- Exact match ends the game immediately (all green) -----
         if (guess.equals(word)) {
             solved = true;
 
@@ -178,19 +193,32 @@ public class VerticleLogic {
             );
         }
 
+        // ----- Verticle rule: only ONE position (based on try index) is "the target" -----
+        // Example: if thisTry==2, you're targeting word.charAt(2).
         char target = word.charAt(thisTry);
 
+        // ----- Prepare remaining letters pool for "yellow" matching (duplicate-safe) -----
         char[] remaining = word.toCharArray();
+
+        // status: 2=green, 1=yellow, 0=grey for each row/character in the guess
         int[] status = new int[letters];
 
+        // ----- Pass 1 (green): mark exactly ONE guess letter as green if it matches target -----
+        // The green is special: it's NOT "same position", it's "matches the target letter for this try".
+        // greenUsed ensures we only award one green even if the guess contains the target letter multiple times.
         boolean greenUsed = false;
         for (int r = 0; r < letters; r++) {
             char c = guess.charAt(r);
+
+            // Candidate for green: guess contains the target letter anywhere
             if (!greenUsed && c == target) {
+
+                // Only mark it green if that letter still exists in remaining pool
+                // (helps with duplicate letters)
                 for (int j = 0; j < letters; j++) {
                     if (remaining[j] == c) {
-                        remaining[j] = 0;
-                        status[r] = 2;
+                        remaining[j] = 0;   // consume that letter
+                        status[r] = 2;      // green
                         greenUsed = true;
                         break;
                     }
@@ -198,22 +226,27 @@ public class VerticleLogic {
             }
         }
 
+        // ----- Pass 2 (yellow/grey): mark remaining letters using the remaining pool -----
         for (int r = 0; r < letters; r++) {
+
+            // Skip the one cell already marked green
             if (status[r] == 2) {
                 continue;
             }
 
             char c = guess.charAt(r);
 
+            // Check if this letter exists somewhere unused in the secret word
             boolean found = false;
             for (int j = 0; j < letters; j++) {
                 if (remaining[j] == c) {
-                    remaining[j] = 0;
+                    remaining[j] = 0; // consume that letter
                     found = true;
                     break;
                 }
             }
 
+            // Yellow if found, otherwise grey
             if (found) {
                 status[r] = 1;
             } else {
@@ -221,6 +254,7 @@ public class VerticleLogic {
             }
         }
 
+        // ----- Convert int status codes to Tile enums -----
         Tile[] out = new Tile[letters];
         for (int r = 0; r < letters; r++) {
             if (status[r] == 2) {
@@ -232,6 +266,7 @@ public class VerticleLogic {
             }
         }
 
+        // ----- Return final result snapshot for this turn -----
         boolean over = isGameOver();
         return new TurnResult(
                 guess,

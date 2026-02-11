@@ -214,17 +214,4 @@ public final class GameStyles {
                 + "-fx-text-fill: white;"
                 + "-fx-background-radius: 6;";
     }
-
-    /**
-     * CSS for a large button (default state).
-     *
-     * @return CSS string for big button style
-     */
-    public static String bigButton() {
-        return "-fx-font-size: 16px;"
-                + "-fx-font-weight: bold;"
-                + "-fx-background-color: #3A3A3C;"
-                + "-fx-text-fill: white;"
-                + "-fx-background-radius: 8;";
-    }
 }

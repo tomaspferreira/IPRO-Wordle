@@ -287,41 +287,60 @@ public class MathlerLogic {
         return solved || tries >= chances;
     }
 
+    /**
+     * Submits one guess for Mathler.
+     * Mathler is basically "Wordle, but the secret is an equation string".
+     * The guess must:
+     * - have the exact same length as the secret equation
+     * - contain only digits and + - * /
+     * Tile rules (Wordle-style):
+     * - GREEN  = correct character in correct position
+     * - YELLOW = character exists somewhere else in the equation (unused)
+     * - GREY   = character not present (or already fully used)
+     */
     public TurnResult submitGuess(String guessRaw) {
+
+        // ----- If the game is already finished, return a safe "empty" result -----
         if (isGameOver()) {
             Tile[] empty = new Tile[equation.length()];
             Arrays.fill(empty, Tile.GREY);
             return new TurnResult("", empty, 0, isGameWon(), true);
         }
 
+        // ----- Normalize input (trim spaces) -----
         String guess = guessRaw.trim();
 
+        // ----- Validate guess length -----
         if (guess.length() != equation.length()) {
             throw new IllegalArgumentException(
                     "Your guess must be " + equation.length() + " characters long."
             );
         }
 
+        // ----- Validate allowed characters (digits and operators only) -----
         for (int i = 0; i < guess.length(); i++) {
             char ch = guess.charAt(i);
+
             boolean ok = (ch >= '0' && ch <= '9')
                     || ch == '+'
                     || ch == '-'
                     || ch == '*'
                     || ch == '/';
+
             if (!ok) {
                 throw new IllegalArgumentException("Only digits and + - * / allowed.");
             }
         }
 
+        // ----- Consume one attempt -----
         tries++;
 
+        // ----- Exact match ends the game immediately (all green) -----
         if (guess.equals(equation)) {
             solved = true;
 
             Tile[] allGreen = new Tile[equation.length()];
             Arrays.fill(allGreen, Tile.GREEN);
-
 
             return new TurnResult(
                     guess,
@@ -332,19 +351,29 @@ public class MathlerLogic {
             );
         }
 
+        // ----- Wordle-style scoring (duplicate-safe) -----
+        // remaining: pool of equation characters that haven't been matched yet
         char[] remaining = equation.toCharArray();
+
+        // green[] marks positions that are already green
         boolean[] green = new boolean[equation.length()];
+
+        // out[] is the final tile result for each position
         Tile[] out = new Tile[equation.length()];
 
+        // ----- Pass 1: mark greens (correct char in correct position) -----
         for (int i = 0; i < equation.length(); i++) {
             if (guess.charAt(i) == equation.charAt(i)) {
                 green[i] = true;
-                remaining[i] = 0;
+                remaining[i] = 0;      // consume this character so it can't be reused
                 out[i] = Tile.GREEN;
             }
         }
 
+        // ----- Pass 2: mark yellows/greys using remaining pool -----
         for (int i = 0; i < equation.length(); i++) {
+
+            // Skip positions already marked green
             if (green[i]) {
                 continue;
             }
@@ -352,14 +381,16 @@ public class MathlerLogic {
             char c = guess.charAt(i);
             boolean found = false;
 
+            // Search for the character in the remaining pool
             for (int j = 0; j < remaining.length; j++) {
                 if (remaining[j] == c) {
-                    remaining[j] = 0;
+                    remaining[j] = 0; // consume match (handles duplicates correctly)
                     found = true;
                     break;
                 }
             }
 
+            // Yellow if found somewhere else, otherwise grey
             if (found) {
                 out[i] = Tile.YELLOW;
             } else {
@@ -367,7 +398,15 @@ public class MathlerLogic {
             }
         }
 
+        // ----- Return result snapshot for this turn -----
         boolean over = isGameOver();
-        return new TurnResult(guess, out, Math.max(0, chances - tries), false, over);
+        return new TurnResult(
+                guess,
+                out,
+                Math.max(0, chances - tries),
+                false,
+                over
+        );
     }
+
 }

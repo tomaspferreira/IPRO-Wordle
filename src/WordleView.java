@@ -21,14 +21,7 @@ public class WordleView extends BorderPane {
      */
     private static class Cell extends StackPane {
 
-        /**
-         * Hint label shown faintly behind the main letter.
-         */
         private final Label hint = new Label("");
-
-        /**
-         * Main label for the typed/painted letter.
-         */
         private final Label main = new Label("");
 
         Cell() {
@@ -36,10 +29,13 @@ public class WordleView extends BorderPane {
             setPrefSize(GameStyles.TILE_SIZE, GameStyles.TILE_SIZE);
             setMaxSize(GameStyles.TILE_SIZE, GameStyles.TILE_SIZE);
 
-            setStyle(baseTileStyle() + emptyBgStyle());
+            // Match other games: dark empty tile
+            setStyle(GameStyles.tileBase() + GameStyles.tileEmpty());
 
-            hint.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: rgba(0,0,0,0.25);");
-            main.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #111;");
+            // Hint should be faint WHITE on dark background
+            hint.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: rgba(255,255,255,0.25);");
+            // Main should be white (like other games)
+            main.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: white;");
 
             getChildren().addAll(hint, main);
             StackPane.setAlignment(hint, Pos.CENTER);
@@ -66,42 +62,28 @@ public class WordleView extends BorderPane {
             main.setText("");
         }
 
-        void setMainColorBlack() {
-            main.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #111;");
-        }
-
-        void setMainColorWhite() {
+        void setTileBgEmpty() {
+            setStyle(GameStyles.tileBase() + GameStyles.tileEmpty());
+            // keep main white
             main.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: white;");
         }
 
-        void setTileBgEmpty() {
-            setStyle(baseTileStyle() + emptyBgStyle());
-            setMainColorBlack();
-        }
-
         void setTileBgGrey() {
-            setStyle(baseTileStyle() + "-fx-background-color: #787C7E;");
-            setMainColorWhite();
+            setStyle(GameStyles.tileBase() + GameStyles.tileGrey());
+            main.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: white;");
         }
 
         void setTileBgYellow() {
-            setStyle(baseTileStyle() + "-fx-background-color: #C9B458;");
-            setMainColorWhite();
+            setStyle(GameStyles.tileBase() + GameStyles.tileYellow());
+            main.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: white;");
         }
 
         void setTileBgGreen() {
-            setStyle(baseTileStyle() + "-fx-background-color: #4CAF50;");
-            setMainColorWhite();
-        }
-
-        private static String baseTileStyle() {
-            return "-fx-border-color: #444; -fx-border-width: 2; -fx-alignment: center;";
-        }
-
-        private static String emptyBgStyle() {
-            return "-fx-background-color: white;";
+            setStyle(GameStyles.tileBase() + GameStyles.tileGreen());
+            main.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: white;");
         }
     }
+
 
     /**
      * Navigator used to switch screens.
@@ -285,7 +267,7 @@ public class WordleView extends BorderPane {
         this.backBtn = new Button("Back");
         backBtn.setPrefWidth(140);
         backBtn.setPrefHeight(44);
-        backBtn.setStyle(GameStyles.bigButton());
+        backBtn.getStyleClass().add("big");
         backBtn.setFocusTraversable(false);
         backBtn.setVisible(false);
         backBtn.setManaged(false);
@@ -294,7 +276,7 @@ public class WordleView extends BorderPane {
         this.giveUpBtn = new Button("Give up");
         giveUpBtn.setPrefWidth(160);
         giveUpBtn.setPrefHeight(44);
-        giveUpBtn.setStyle(GameStyles.bigButton());
+        giveUpBtn.getStyleClass().add("big");
         giveUpBtn.setFocusTraversable(false);
 
 
@@ -352,6 +334,12 @@ public class WordleView extends BorderPane {
     }
 
     // ---------- Submit ----------
+
+    /**
+     * Main "ENTER" handler: validates the current guess, submits it to the logic,
+     * paints the result on all active boards, updates keyboard + counters,
+     * and advances to the next row (or ends the game).
+     */
     private void submit() {
         if (uiLocked) {
             return;
@@ -387,7 +375,11 @@ public class WordleView extends BorderPane {
         advanceToNextRow();
     }
 
-
+    /**
+     * Checks whether a guess can be submitted right now:
+     * game not over, still have rows left, and the current row is fully typed.
+     * Also sets an error message if something is wrong.
+     */
     private boolean canSubmit() {
         if (game.isGameOver()) {
             message.setText("Game over.");
@@ -404,6 +396,10 @@ public class WordleView extends BorderPane {
         return true;
     }
 
+    /**
+     * Validates the guess using Hunspell (dictionary check).
+     * If invalid, shows an error message.
+     */
     private boolean isValidGuessWord(String guessRaw) {
         if (!HunspellChecker.isValidWord(guessRaw)) {
             message.setText("Not a valid word.");
@@ -412,6 +408,10 @@ public class WordleView extends BorderPane {
         return true;
     }
 
+    /**
+     * Adds each letter from the guess to the "used letters" set,
+     * so the keyboard can be updated later.
+     */
     private void addUsedLetters(String guessRaw) {
         for (int i = 0; i < guessRaw.length(); i++) {
             char ch = Character.toUpperCase(guessRaw.charAt(i));
@@ -421,6 +421,12 @@ public class WordleView extends BorderPane {
         }
     }
 
+    /**
+     * Calls the game logic to score the guess and produce a TurnResult.
+     * Catches and displays any validation error coming from the logic.
+     *
+     * @return the TurnResult, or null if submission failed
+     */
     private WordleLogic.TurnResult submitToLogic(String guessRaw) {
         try {
             return game.submitGuess(guessRaw);
@@ -430,6 +436,11 @@ public class WordleView extends BorderPane {
         }
     }
 
+    /**
+     * Applies the TurnResult to the UI for the current row:
+     * paints each unsolved board, updates SOLVED labels, and freezes boards
+     * that become solved this turn.
+     */
     private void applyTurnResult(WordleLogic.TurnResult result) {
         int paintedRow = rowIndex;
 
@@ -452,6 +463,10 @@ public class WordleView extends BorderPane {
         }
     }
 
+    /**
+     * Paints a single board row (one word board, one guess row).
+     * Also records newly discovered green letters into knownGreens for hints.
+     */
     private void paintBoardRow(
             int wordIndex,
             int paintedRow,
@@ -482,6 +497,11 @@ public class WordleView extends BorderPane {
         }
     }
 
+    /**
+     * If the game ended this turn, shows the win/lose screen and locks the UI.
+     *
+     * @return true if the game ended and the caller should stop processing
+     */
     private boolean handleEndIfNeeded(WordleLogic.TurnResult result) {
         if (result.isGameWon()) {
             showStandardWinWordle();
@@ -494,9 +514,11 @@ public class WordleView extends BorderPane {
         return false;
     }
 
-
-
-
+    /**
+     * Moves input state to the next row:
+     * reveals the next row (for unsolved boards), resets typed letters,
+     * clears messages, refreshes hints, and re-focuses the view.
+     */
     private void advanceToNextRow() {
         int nextRow = rowIndex + 1;
         if (nextRow < chances) {
@@ -514,6 +536,10 @@ public class WordleView extends BorderPane {
         requestFocus();
     }
 
+    /**
+     * Makes the given row visible on every board that is not yet solved.
+     * (Solved boards stay frozen and don't reveal further rows.)
+     */
     private void revealNextRow(int nextRow) {
         for (int w = 0; w < wordsCount; w++) {
             if (!solvedBefore[w]) {
@@ -523,6 +549,11 @@ public class WordleView extends BorderPane {
         }
     }
 
+    /**
+     * Types one letter into the current row (all unsolved boards),
+     * updates the displayed tiles, advances the column,
+     * and refreshes hint letters behind empty tiles.
+     */
     private void typeChar(char ch) {
         if (uiLocked) {
             return;
@@ -557,8 +588,10 @@ public class WordleView extends BorderPane {
         refreshHintsForTypingRow();
     }
 
-
-
+    /**
+     * Deletes the last typed character in the current row (all unsolved boards),
+     * clears the tile, and refreshes hints.
+     */
     private void backspace() {
         if (uiLocked) {
             return;
@@ -588,6 +621,10 @@ public class WordleView extends BorderPane {
         refreshHintsForTypingRow();
     }
 
+    /**
+     * Refreshes hint letters (known green positions) for the row being typed:
+     * for each unsolved board, show a faint hint behind empty cells.
+     */
     private void refreshHintsForTypingRow() {
         if (rowIndex >= chances) {
             return;
@@ -613,6 +650,12 @@ public class WordleView extends BorderPane {
         }
     }
 
+    /**
+     * Greys out keyboard letters that are either:
+     * - not present in any target word, OR
+     * - fully resolved everywhere (all occurrences are known green).
+     * This is your "smart greying" rule for multi-word Wordle.
+     */
     private void updateKeyboardGreying() {
         String[] targetWords = game.getWords();
 
@@ -652,6 +695,10 @@ public class WordleView extends BorderPane {
         }
     }
 
+    /**
+     * Locks the game UI after win/lose:
+     * disables further input (uiLocked), hides Give Up, shows Back.
+     */
     private void endGameUI() {
         uiLocked = true;
 
@@ -664,7 +711,10 @@ public class WordleView extends BorderPane {
         requestFocus();
     }
 
-
+    /**
+     * Wraps a VBox in a ScrollPane so end screens don't overflow on small windows
+     * (useful when many words must be shown).
+     */
     private ScrollPane wrapCenterInScroll(VBox content) {
         ScrollPane scroll = new ScrollPane(content);
         scroll.setFitToWidth(true);
@@ -674,6 +724,9 @@ public class WordleView extends BorderPane {
         return scroll;
     }
 
+    /**
+     * Replaces the center of the view with a win screen and locks the UI.
+     */
     private void showStandardWinWordle() {
         VBox content = new VBox(10);
         content.setAlignment(Pos.CENTER);
@@ -691,7 +744,10 @@ public class WordleView extends BorderPane {
         endGameUI();
     }
 
-
+    /**
+     * Replaces the center of the view with a loose screen (listing all target words)
+     * and locks the UI.
+     */
     private void showStandardLoseWordle(String msg) {
         VBox content = new VBox(10);
         content.setAlignment(Pos.CENTER);
@@ -715,7 +771,10 @@ public class WordleView extends BorderPane {
         endGameUI();
     }
 
-
+    /**
+     * Builds the on-screen QWERTZ keyboard and wires it to submit/backspace/typeChar.
+     * Also registers keys with KeyboardColorManager so they can be recolored later.
+     */
     private KeyboardPane buildLetterKeyboard() {
         String[][] rows = {
                 {"Q", "W", "E", "R", "T", "Z", "U", "I", "O", "P"},
@@ -739,10 +798,9 @@ public class WordleView extends BorderPane {
         return new KeyboardPane(
                 rows,
                 sizing,
-                k -> GameStyles.keyBase(),
+                _ -> GameStyles.keyBase(),
                 keyboardColors,
                 handlers
         );
     }
-
 }

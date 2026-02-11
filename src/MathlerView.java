@@ -138,7 +138,7 @@ public class MathlerView extends BorderPane {
         Button backBtn = new Button("Back");
         backBtn.setPrefWidth(140);
         backBtn.setPrefHeight(44);
-        backBtn.setStyle(GameStyles.bigButton());
+        backBtn.getStyleClass().add("big");
         backBtn.setFocusTraversable(false);
         backBtn.setVisible(false);
         backBtn.setManaged(false);
@@ -146,7 +146,7 @@ public class MathlerView extends BorderPane {
         Button giveUpBtn = new Button("Give up");
         giveUpBtn.setPrefWidth(160);
         giveUpBtn.setPrefHeight(44);
-        giveUpBtn.setStyle(GameStyles.bigButton());
+        giveUpBtn.getStyleClass().add("big");
         giveUpBtn.setFocusTraversable(false);
 
         KeyboardPane keyboard = buildMathKeyboard();
@@ -169,26 +169,36 @@ public class MathlerView extends BorderPane {
             showStandardLose(backBtn, giveUpBtn, "You gave up.");
         });
 
+        // ----- ENTER action for Mathler: validate row -> submit to logic -> paint row -> advance/end -----
         this.enterAction = () -> {
+
+            // Ignore ENTER if UI is locked (after win/lose/give up)
             if (uiLocked) {
                 return;
             }
 
+            // Prevent submitting after the logic says the game is finished
             if (game.isGameOver()) {
                 message.setText("Game over.");
                 return;
             }
+
+            // Bounds safety: no more rows available
             if (rowIndex >= chances) {
                 message.setText("No guesses left.");
                 return;
             }
+
+            // Must fill the whole equation-length row before submitting
             if (colIndex < len) {
                 message.setText("Not enough characters.");
                 return;
             }
 
+            // Build guess from typed buffer
             String guess = new String(current);
 
+            // Submit guess to logic (may throw if invalid characters/length)
             MathlerLogic.TurnResult r;
             try {
                 r = game.submitGuess(guess);
@@ -197,6 +207,7 @@ public class MathlerView extends BorderPane {
                 return;
             }
 
+            // Paint the current row with green/yellow/grey feedback
             for (int c = 0; c < len; c++) {
                 Label t = tiles[rowIndex][c];
                 char ch = r.getGuess().charAt(c);
@@ -204,43 +215,61 @@ public class MathlerView extends BorderPane {
                 t.setText(String.valueOf(ch));
                 t.setStyle(GameStyles.tileBase() + styleFor(r.getTiles()[c]));
 
+                // Normalize x/X to * for keyboard coloring consistency
                 if (ch == 'x' || ch == 'X') {
                     ch = '*';
                 }
+
+                // Update keyboard key colors (never downgrade)
                 keyboardColors.promoteKey(ch, rankForMathTile(r.getTiles()[c]));
             }
 
+            // Update remaining guesses label and clear error/status message
             remaining.setText("Guesses left: " + r.getRemainingGuesses());
             message.setText("");
 
+            // If solved, show win screen and lock UI
             if (r.isGameWon()) {
                 uiLocked = true;
                 showStandardWin(backBtn, giveUpBtn, "Correct!");
                 return;
             }
+
+            // If out of guesses, show lose screen and lock UI
             if (r.isGameOver()) {
                 uiLocked = true;
                 showStandardLose(backBtn, giveUpBtn, "Out of guesses.");
                 return;
             }
 
+            // Advance to next row: reset typing state for the new guess
             rowIndex++;
             colIndex = 0;
             for (int i = 0; i < len; i++) {
                 current[i] = 0;
             }
 
+            // Reveal/build the next row in the grid
             if (rowIndex < chances) {
                 addRowToGrid(rowIndex);
             }
 
+            // Keep focus for keyboard typing
             requestFocus();
         };
 
+
+// ----- Make the view focusable so it can receive key events -----
         setFocusTraversable(true);
+
+// Clicking anywhere gives focus back (prevents "keyboard stopped working")
         setOnMousePressed(_ -> requestFocus());
 
+
+// ----- Physical keyboard handler: ENTER, BACKSPACE, digits, operators, numpad -----
         setOnKeyPressed(e -> {
+
+            // Ignore input if UI is locked or game already ended
             if (uiLocked) {
                 return;
             }
@@ -248,17 +277,22 @@ public class MathlerView extends BorderPane {
                 return;
             }
 
+            // ENTER triggers the enterAction submit logic
             if (e.getCode() == KeyCode.ENTER) {
                 if (enterAction != null) {
                     enterAction.run();
                 }
                 return;
             }
+
+            // BACKSPACE deletes last character
             if (e.getCode() == KeyCode.BACK_SPACE) {
                 backspace();
                 return;
             }
 
+            // Some keyboards produce operators via SHIFT + digit keys:
+            // SHIFT+1 -> '+', SHIFT+3 -> '*', SHIFT+7 -> '/'
             boolean shift = e.isShiftDown();
 
             if (e.getCode() == KeyCode.DIGIT1) {
@@ -274,6 +308,7 @@ public class MathlerView extends BorderPane {
                 return;
             }
 
+            // Standard digit keys
             if (e.getCode() == KeyCode.DIGIT0) {
                 typeChar('0');
                 return;
@@ -303,6 +338,7 @@ public class MathlerView extends BorderPane {
                 return;
             }
 
+            // Numpad digits
             if (e.getCode() == KeyCode.NUMPAD0) {
                 typeChar('0');
                 return;
@@ -344,6 +380,7 @@ public class MathlerView extends BorderPane {
                 return;
             }
 
+            // Operator keys (main keyboard or numpad)
             if (e.getCode() == KeyCode.PLUS || e.getCode() == KeyCode.ADD) {
                 typeChar('+');
                 return;
@@ -361,6 +398,7 @@ public class MathlerView extends BorderPane {
                 return;
             }
 
+            // Fallback: take the actual typed character, accept if it’s allowed
             String txt = e.getText();
             if (txt != null && txt.length() == 1) {
                 char ch = txt.charAt(0);
@@ -370,6 +408,8 @@ public class MathlerView extends BorderPane {
             }
         });
 
+
+// ----- After UI shows, apply CSS/layout and ensure the view has focus -----
         Platform.runLater(() -> {
             applyCss();
             layout();
@@ -377,12 +417,19 @@ public class MathlerView extends BorderPane {
         });
     }
 
+    /**
+     * Adds one row of tiles to the grid at the given row index.
+     */
     private void addRowToGrid(int row) {
         for (int c = 0; c < len; c++) {
             grid.add(tiles[row][c], c, row);
         }
     }
 
+    /**
+     * Types one character into the current row, updates the tile text/style,
+     * and advances the cursor to the next column.
+     */
     private void typeChar(char ch) {
         if (uiLocked) {
             return;
@@ -397,6 +444,7 @@ public class MathlerView extends BorderPane {
             return;
         }
 
+        // Accept x/X as an alias for multiplication and store it as '*'
         if (ch == 'x' || ch == 'X') {
             ch = '*';
         }
@@ -410,6 +458,9 @@ public class MathlerView extends BorderPane {
         colIndex++;
     }
 
+    /**
+     * Deletes the last typed character in the current row and clears that tile.
+     */
     private void backspace() {
         if (uiLocked) {
             return;
@@ -426,6 +477,10 @@ public class MathlerView extends BorderPane {
         t.setStyle(GameStyles.tileBase() + GameStyles.tileEmpty());
     }
 
+    /**
+     * Returns true if a character is allowed in Mathler guesses.
+     * (digits, +, -, *, /, and x/X as a multiplication alias)
+     */
     private boolean isAllowedMathChar(char ch) {
         return (ch >= '0' && ch <= '9')
                 || ch == '+'
@@ -436,6 +491,9 @@ public class MathlerView extends BorderPane {
                 || ch == 'X';
     }
 
+    /**
+     * Maps Mathler tile feedback to the matching board CSS style.
+     */
     private String styleFor(MathlerLogic.Tile tile) {
         if (tile == MathlerLogic.Tile.GREEN) {
             return GameStyles.tileGreen();
@@ -446,6 +504,10 @@ public class MathlerView extends BorderPane {
         return GameStyles.tileGrey();
     }
 
+    /**
+     * Shows a standard win screen and swaps buttons:
+     * hide Give up, show Back.
+     */
     private void showStandardWin(Button backBtn, Button giveUpBtn, String messageText) {
         VBox content = new VBox(10);
         content.setAlignment(Pos.CENTER);
@@ -473,6 +535,10 @@ public class MathlerView extends BorderPane {
         requestFocus();
     }
 
+    /**
+     * Shows a standard lose screen (revealing the secret equation)
+     * and swaps buttons so the user can go back.
+     */
     private void showStandardLose(Button backBtn, Button giveUpBtn, String msg) {
         VBox content = new VBox(10);
         content.setAlignment(Pos.CENTER);
@@ -504,6 +570,11 @@ public class MathlerView extends BorderPane {
         requestFocus();
     }
 
+    /**
+     * Builds the on-screen Mathler keyboard and wires it to:
+     * ENTER -> enterAction, ⌫ -> backspace, keys -> typeChar.
+     * Registers keys for recoloring via KeyboardColorManager.
+     */
     private KeyboardPane buildMathKeyboard() {
         String[][] rows = {
                 {"1", "2", "3", "+", "-"},
@@ -538,7 +609,10 @@ public class MathlerView extends BorderPane {
         );
     }
 
-
+    /**
+     * Converts Mathler tile feedback into keyboard rank values:
+     * GREY=1, YELLOW=2, GREEN=3 (so keys never downgrade).
+     */
     private int rankForMathTile(MathlerLogic.Tile t) {
         if (t == MathlerLogic.Tile.GREY) {
             return 1;

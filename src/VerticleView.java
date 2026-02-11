@@ -135,7 +135,7 @@ public class VerticleView extends BorderPane {
         Button backBtn = new Button("Back");
         backBtn.setPrefWidth(140);
         backBtn.setPrefHeight(44);
-        backBtn.setStyle(GameStyles.bigButton());
+        backBtn.getStyleClass().add("big");
         backBtn.setFocusTraversable(false);
         backBtn.setVisible(false);
         backBtn.setManaged(false);
@@ -143,7 +143,7 @@ public class VerticleView extends BorderPane {
         Button giveUpBtn = new Button("Give up");
         giveUpBtn.setPrefWidth(160);
         giveUpBtn.setPrefHeight(44);
-        giveUpBtn.setStyle(GameStyles.bigButton());
+        giveUpBtn.getStyleClass().add("big");
         giveUpBtn.setFocusTraversable(false);
 
         KeyboardPane keyboard = buildLetterKeyboard();
@@ -166,28 +166,36 @@ public class VerticleView extends BorderPane {
             showStandardLose(backBtn, giveUpBtn, "You gave up.");
         });
 
+        // ----- ENTER action for Verticle: validate + submit + paint current column -----
         this.enterAction = () -> {
+
+            // Ignore submit if UI is locked (game ended / give up screen)
             if (uiLocked) {
                 return;
             }
 
+            // Extra safety: don't submit if logic says game is already over
             if (game.isGameOver()) {
                 message.setText("Game over.");
                 return;
             }
 
+            // Must fill the whole "vertical guess" (letters characters) before submitting
             if (typedIndex < letters) {
                 message.setText("Not enough letters.");
                 return;
             }
 
+            // Build guess from typed characters
             String guess = new String(current);
 
+            // Dictionary validation (only allow real words)
             if (!HunspellChecker.isValidWord(guess)) {
                 message.setText("Not a valid word.");
                 return;
             }
 
+            // Submit guess to the Verticle logic (may throw if invalid)
             VerticleLogic.TurnResult r;
             try {
                 r = game.submitGuess(guess);
@@ -196,8 +204,10 @@ public class VerticleView extends BorderPane {
                 return;
             }
 
+            // In Verticle: each guess fills a COLUMN, and tryIndex tells which column
             int col = r.getTryIndex();
 
+            // Paint all rows in that column with green/yellow/grey feedback
             for (int row = 0; row < letters; row++) {
                 Label t = tiles[row][col];
                 char ch = r.getGuess().charAt(row);
@@ -205,21 +215,26 @@ public class VerticleView extends BorderPane {
                 t.setText(String.valueOf(ch));
                 t.setStyle(GameStyles.tileBase() + styleFor(r.getTiles()[row]));
 
+                // Update keyboard colors (keys never downgrade)
                 keyboardColors.promoteKey(ch, rankForVertTile(r.getTiles()[row]));
             }
 
+            // Update remaining guesses label and clear message
             remaining.setText("Guesses left: " + r.getRemainingGuesses());
             message.setText("");
 
+            // Reset typing buffer for the next column
             typedIndex = 0;
             for (int i = 0; i < letters; i++) {
                 current[i] = 0;
             }
 
+            // Reveal/build the next column if the game continues
             if (!r.isGameOver() && col + 1 < chances) {
                 addColumnToGrid(col + 1);
             }
 
+            // If game ended, show win/lose screen and lock UI
             if (r.isGameWon()) {
                 uiLocked = true;
                 showStandardWin(backBtn, giveUpBtn, "Correct!");
@@ -228,13 +243,22 @@ public class VerticleView extends BorderPane {
                 showStandardLose(backBtn, giveUpBtn, "Out of guesses.");
             }
 
+            // Keep focus so physical keyboard input continues to work
             requestFocus();
         };
 
+
+// ----- Make this BorderPane focusable so it can receive key events -----
         setFocusTraversable(true);
+
+// Clicking anywhere should give focus back (so keyboard keeps working)
         setOnMousePressed(_ -> requestFocus());
 
+
+// ----- Physical keyboard handler: ENTER / BACKSPACE / A-Z typing -----
         setOnKeyPressed(e -> {
+
+            // Ignore input when UI is locked or game ended
             if (uiLocked) {
                 return;
             }
@@ -242,17 +266,21 @@ public class VerticleView extends BorderPane {
                 return;
             }
 
+            // ENTER submits using the prepared enterAction
             if (e.getCode() == KeyCode.ENTER) {
                 if (enterAction != null) {
                     enterAction.run();
                 }
                 return;
             }
+
+            // BACKSPACE deletes the last typed letter in the current column
             if (e.getCode() == KeyCode.BACK_SPACE) {
                 backspace();
                 return;
             }
 
+            // Any typed character: accept only A-Z and type it
             String txt = e.getText();
             if (txt != null && txt.length() == 1) {
                 char ch = Character.toUpperCase(txt.charAt(0));
@@ -262,19 +290,30 @@ public class VerticleView extends BorderPane {
             }
         });
 
+
+// ----- After the UI is shown, apply CSS/layout and request focus -----
         Platform.runLater(() -> {
             applyCss();
             layout();
             requestFocus();
         });
+
     }
 
+    /**
+     * Adds one entire column of tiles to the GridPane at the given column index.
+     * (Verticle fills columns over time, not rows.)
+     */
     private void addColumnToGrid(int col) {
         for (int r = 0; r < letters; r++) {
             grid.add(tiles[r][col], col, r);
         }
     }
 
+    /**
+     * Types one letter into the current column at row = typedIndex.
+     * Uses game.getTries() to figure out which column we're currently filling.
+     */
     private void typeChar(char ch) {
         if (uiLocked) {
             return;
@@ -283,14 +322,18 @@ public class VerticleView extends BorderPane {
             return;
         }
 
+        // Current column equals the number of tries already used
         int col = game.getTries();
         if (col >= chances) {
             return;
         }
+
+        // Stop if column is full
         if (typedIndex >= letters) {
             return;
         }
 
+        // Store typed char in buffer and show it on the board
         ch = Character.toUpperCase(ch);
         current[typedIndex] = ch;
 
@@ -301,6 +344,10 @@ public class VerticleView extends BorderPane {
         typedIndex++;
     }
 
+    /**
+     * Deletes the last typed letter in the current column
+     * and clears that tile on the board.
+     */
     private void backspace() {
         if (uiLocked) {
             return;
@@ -318,6 +365,9 @@ public class VerticleView extends BorderPane {
         t.setStyle(GameStyles.tileBase() + GameStyles.tileEmpty());
     }
 
+    /**
+     * Maps VerticleLogic tile feedback to board CSS style.
+     */
     private String styleFor(VerticleLogic.Tile tile) {
         if (tile == VerticleLogic.Tile.GREEN) {
             return GameStyles.tileGreen();
@@ -328,6 +378,10 @@ public class VerticleView extends BorderPane {
         return GameStyles.tileGrey();
     }
 
+    /**
+     * Shows a standard win screen in the center and swaps buttons:
+     * hide Give up, show Back.
+     */
     private void showStandardWin(Button backBtn, Button giveUpBtn, String messageText) {
         VBox content = new VBox(10);
         content.setAlignment(Pos.CENTER);
@@ -355,6 +409,10 @@ public class VerticleView extends BorderPane {
         requestFocus();
     }
 
+    /**
+     * Shows a standard lose screen (revealing the secret word),
+     * then swaps buttons and locks the view to end input.
+     */
     private void showStandardLose(Button backBtn, Button giveUpBtn, String msg) {
         VBox content = new VBox(10);
         content.setAlignment(Pos.CENTER);
@@ -386,6 +444,11 @@ public class VerticleView extends BorderPane {
         requestFocus();
     }
 
+    /**
+     * Builds the on-screen keyboard and wires it to:
+     * ENTER -> enterAction, ⌫ -> backspace, letters -> typeChar.
+     * Also registers keys for recoloring via KeyboardColorManager.
+     */
     private KeyboardPane buildLetterKeyboard() {
         String[][] rows = {
                 {"Q", "W", "E", "R", "T", "Z", "U", "I", "O", "P"},
@@ -419,7 +482,10 @@ public class VerticleView extends BorderPane {
         );
     }
 
-
+    /**
+     * Converts Verticle tile feedback into a keyboard "rank":
+     * GREY=1, YELLOW=2, GREEN=3 (so keys never downgrade).
+     */
     private int rankForVertTile(VerticleLogic.Tile t) {
         if (t == VerticleLogic.Tile.GREY) {
             return 1;

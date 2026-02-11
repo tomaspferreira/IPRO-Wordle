@@ -98,7 +98,6 @@ public class WordleLogic {
         this.tries = 0;
     }
 
-
     /** Number of secret words to solve. */
     private final int wordsCount;
 
@@ -178,7 +177,14 @@ public class WordleLogic {
         return isGameWon() || tries >= chances;
     }
 
+    /**
+     * Submits one guess for multi-word Wordle.
+     * One guess is scored against every secret word.
+     * Returns a 2D tile array: tilesByWord[wordIndex][letterIndex].
+     */
     public TurnResult submitGuess(String guessRaw) {
+
+        // ----- If the game is already finished, return a safe "empty" result -----
         if (isGameOver()) {
             Tile[][] empty = new Tile[wordsCount][letters];
             for (int w = 0; w < wordsCount; w++) {
@@ -186,25 +192,35 @@ public class WordleLogic {
                     empty[w][i] = Tile.GREY;
                 }
             }
+
+            // tries is already at end, remaining guesses = 0, gameOver = true
             return new TurnResult("", empty, getSolved(), 0, isGameWon(), true);
         }
 
+        // ----- Normalize and validate the guess -----
         String guess = guessRaw.trim().toUpperCase();
         if (guess.length() != letters) {
             throw new IllegalArgumentException("Guess must be exactly " + letters + " letters.");
         }
 
+        // ----- Consume one attempt -----
         tries++;
 
+        // tilesByWord[w][i] stores the feedback for secret word w at position i
         Tile[][] tilesByWord = new Tile[wordsCount][letters];
 
+        // ----- Score this guess against every secret word -----
         for (int w = 0; w < wordsCount; w++) {
+
+            // If the guess exactly matches this word, mark it solved
             if (!solved[w] && guess.equals(words[w])) {
                 solved[w] = true;
             }
 
+            // Compute standard Wordle score (2=green, 1=yellow, 0=grey)
             int[] status = scoreWordle(words[w], guess);
 
+            // Convert int status codes to Tile enums for this word
             for (int i = 0; i < letters; i++) {
                 if (status[i] == 2) {
                     tilesByWord[w][i] = Tile.GREEN;
@@ -215,6 +231,8 @@ public class WordleLogic {
                 }
             }
 
+            // If this word is solved, force the entire row to GREEN
+            // (so the UI can display a fully-green solved board)
             if (solved[w]) {
                 for (int i = 0; i < letters; i++) {
                     tilesByWord[w][i] = Tile.GREEN;
@@ -222,9 +240,11 @@ public class WordleLogic {
             }
         }
 
+        // ----- Compute overall game state after scoring all words -----
         boolean won = isGameWon();
         boolean over = isGameOver();
 
+        // ----- Return snapshot of this turn's result -----
         return new TurnResult(
                 guess,
                 tilesByWord,
@@ -235,20 +255,36 @@ public class WordleLogic {
         );
     }
 
+
+    /**
+     * Standard Wordle scoring algorithm for a single secret word.
+     * Returns an int array where:
+     * 2 = green (correct letter in correct position)
+     * 1 = yellow (letter exists elsewhere in the word)
+     * 0 = grey (letter not present)
+     * Uses a two-pass approach to handle duplicate letters correctly.
+     */
     private static int[] scoreWordle(String word, String guess) {
+
         int n = word.length();
         int[] status = new int[n];
+
+        // Remaining letters pool (so each letter can only be matched once)
         char[] remaining = word.toCharArray();
+
+        // Marks positions already scored green
         boolean[] green = new boolean[n];
 
+        // ----- Pass 1: find greens and remove them from remaining pool -----
         for (int i = 0; i < n; i++) {
             if (guess.charAt(i) == word.charAt(i)) {
                 status[i] = 2;
                 green[i] = true;
-                remaining[i] = 0;
+                remaining[i] = 0; // consume this letter
             }
         }
 
+        // ----- Pass 2: for non-greens, mark yellow if letter exists in remaining pool -----
         for (int i = 0; i < n; i++) {
             if (green[i]) {
                 continue;
@@ -258,7 +294,7 @@ public class WordleLogic {
             for (int j = 0; j < n; j++) {
                 if (remaining[j] == c) {
                     status[i] = 1;
-                    remaining[j] = 0;
+                    remaining[j] = 0; // consume match so duplicates are handled correctly
                     break;
                 }
             }
