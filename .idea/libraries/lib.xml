@@ -1,0 +1,21 @@
+<component name="libraryTable">
+  <library name="lib">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/lib/javafx.media.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/jhunspell-1.0.5.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/javafx.controls.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/jna-5.13.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/jfx.incubator.input.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/javafx.base.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/javafx-swt.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/jdk.jsobject.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/javafx.swing.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/javafx.web.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/javafx.fxml.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/javafx.graphics.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/jfx.incubator.richtext.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

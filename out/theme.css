@@ -1,0 +1,97 @@
+/* ===== Global App Theme ===== */
+.root {
+    -fx-background-color: #1E1F22;
+    -fx-font-family: "Segoe UI", "Inter", "Arial";
+}
+
+/* ===== Labels ===== */
+.label {
+    -fx-text-fill: #FFFFFF;
+}
+
+.label.secondary {
+    -fx-text-fill: #C9C9C9;
+}
+
+.label.error {
+    -fx-text-fill: #FF6B6B;
+}
+
+.label.success {
+    -fx-text-fill: #6BCB77;
+}
+
+/* ===== Buttons ===== */
+.button {
+    -fx-background-color: #3A3A3C;
+    -fx-text-fill: white;
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+    -fx-font-weight: bold;
+}
+
+.button:hover {
+    -fx-background-color: #4A4A4C;
+}
+
+.button:pressed {
+    -fx-background-color: #2F2F31;
+}
+
+/* ===== ComboBox ===== */
+.combo-box {
+    -fx-background-color: #3A3A3C;
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+    -fx-mark-color: white;
+    -fx-font-weight: bold;
+}
+
+.combo-box .list-cell {
+    -fx-text-fill: white;
+    -fx-background-color: transparent;
+}
+
+.combo-box-popup .list-view {
+    -fx-background-color: #2A2B2E;
+    -fx-control-inner-background: #2A2B2E;
+}
+
+.combo-box-popup .list-cell {
+    -fx-text-fill: white;
+    -fx-background-color: #2A2B2E;
+}
+
+.combo-box-popup .list-cell:hover {
+    -fx-background-color: #3A3A3C;
+}
+
+/* ===== ScrollPane ===== */
+.scroll-pane {
+    -fx-background-color: #1E1F22;
+    -fx-background: #1E1F22;
+}
+
+.scroll-pane > .viewport {
+    -fx-background-color: #1E1F22;
+}
+
+.scroll-bar:vertical, .scroll-bar:horizontal {
+    -fx-background-color: #1E1F22;
+}
+
+.scroll-bar .thumb {
+    -fx-background-color: #3A3A3C;
+    -fx-background-radius: 10;
+}
+
+/* ===== Optional: TextField / other controls (safe) ===== */
+.text-field {
+    -fx-background-color: #2A2B2E;
+    -fx-text-fill: white;
+    -fx-prompt-text-fill: #C9C9C9;
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+}
+
+header.getStyleClass().add("secondary");
